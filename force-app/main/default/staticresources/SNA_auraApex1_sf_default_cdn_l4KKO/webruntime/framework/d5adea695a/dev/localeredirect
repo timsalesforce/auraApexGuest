@@ -1,0 +1,90 @@
+(function (global, factory) {
+    typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
+    typeof define === 'function' && define.amd ? define(factory) :
+    (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.redirectForLocale = factory());
+})(this, (function () { 'use strict';
+
+    function updateCookie(key, value, path) {
+        if (!value) {
+            document.cookie = `${key}=;path=${path};expires=Thu, 01 Jan 1970 00:00:01 GMT`;
+        } else {
+            const COOKIE_AGE_ONE_YEAR = 58 * 60 * 24 * 365;
+            document.cookie = `${key}=${value};path=${path};Max-Age=${COOKIE_AGE_ONE_YEAR}`;
+        }
+    }
+
+    function redirectForLocale(defaultLocale, activeLanguages, cookieKey, basePath) {
+        if (basePath == null || !activeLanguages || activeLanguages.length <= 1) {
+            return;
+        }
+
+        const redirectFalseRegexp = /[?&]redirect=false/;
+        const segments = basePath.split('/');
+        let urlLocale = segments.length < 2 ? '' : segments[segments.length - 1];
+        // Don't treat as language if not supported
+        if (!activeLanguages.includes(urlLocale)) {
+            urlLocale = '';
+        }
+
+        const browserLanguages = window.navigator.languages;
+        // Find exact match
+        let browserLocale = browserLanguages.find((bl) => activeLanguages.includes(bl));
+        // Failing that, look for "parent languages", e.g. browser has pt-BR, we only support pt so return that
+        if (!browserLocale) {
+            const activeParentLanguages = activeLanguages.filter((lang) => !lang.includes('-'));
+            const browserParentLanguages = browserLanguages.map((lang) => lang.split('-')[0]);
+            browserLocale = browserParentLanguages.find((browserLang) =>
+                activeParentLanguages.includes(browserLang)
+            );
+        }
+
+        const urlLocaleRegexp = new RegExp(`\\/${urlLocale}\\/?`);
+        const basePathWithoutLocale = urlLocale ? basePath.replace(urlLocaleRegexp, '') : basePath;
+
+        const cookieMap = document.cookie.split('; ').reduce((accum, item) => {
+            const [name, ...value] = item.split('=');
+            accum[name] = value.join('=');
+            return accum;
+        }, {});
+        const cookieLanguage = cookieMap[cookieKey];
+        const isCookieLanguageValid = Boolean(
+            cookieLanguage && activeLanguages.includes(cookieLanguage)
+        );
+        const cookiePath = '/';
+
+        // when a valid url param locale exists OR when query param "redirect=false" exists, no redirection.
+        // setting cookies: if there isn't a cookie, and the browser locale is already the url param locale, then no need to set the cookie.
+        if (urlLocale && activeLanguages.includes(urlLocale)) {
+            if (!isCookieLanguageValid && browserLocale === urlLocale) {
+                updateCookie(cookieKey, null, cookiePath);
+            } else {
+                updateCookie(cookieKey, urlLocale, cookiePath);
+            }
+        } else if (redirectFalseRegexp.test(window.location.search)) {
+            if (defaultLocale === browserLocale) {
+                updateCookie(cookieKey, null, cookiePath);
+            } else {
+                updateCookie(cookieKey, defaultLocale, cookiePath);
+            }
+        } else {
+            if (isCookieLanguageValid) {
+                if (cookieLanguage !== defaultLocale) {
+                    const newPath = window.location.pathname.replace(
+                        basePath,
+                        `${basePathWithoutLocale}/${cookieLanguage}`
+                    );
+                    window.location.pathname = newPath;
+                }
+            } else if (browserLocale && browserLocale !== defaultLocale) {
+                const newPath = window.location.pathname.replace(
+                    basePath,
+                    `${basePathWithoutLocale}/${browserLocale}`
+                );
+                window.location.pathname = newPath;
+            }
+        }
+    }
+
+    return redirectForLocale;
+
+}));

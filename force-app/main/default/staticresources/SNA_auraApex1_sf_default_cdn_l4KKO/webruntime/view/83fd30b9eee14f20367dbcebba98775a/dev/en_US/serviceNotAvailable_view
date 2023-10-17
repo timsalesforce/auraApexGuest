@@ -1,0 +1,187 @@
+(function() { LWR.define('community_layout/simpleThemeLayout', ['exports', 'lwc'], (function (exports, lwc) {
+
+    function stylesheet(token, useActualHostSelector, useNativeDirPseudoclass) {
+      var shadowSelector = token ? ("[" + token + "]") : "";
+      var hostSelector = token ? ("[" + token + "-host]") : "";
+      return ((useActualHostSelector ? ":host {" : hostSelector + " {")) + "display: flex;flex-flow: column;height: 100%;}header" + shadowSelector + " {display: flex;justify-content: center;padding: var(--dxp-c-header-container-spacing-block-start)\n var(--dxp-c-header-container-spacing-inline-end)\n var(--dxp-c-header-container-spacing-block-end)\n var(--dxp-c-header-container-spacing-inline-start);}.header-content" + shadowSelector + " {max-width: var(--dxp-c-header-content-max-width, var(--dxp-s-header-content-max-width));flex: 1 1 auto;}main" + shadowSelector + " {flex: 1 0 auto;}footer" + shadowSelector + " {display: flex;justify-content: center;padding: var(--dxp-c-footer-container-spacing-block-start)\n var(--dxp-c-footer-container-spacing-inline-end)\n var(--dxp-c-footer-container-spacing-block-end)\n var(--dxp-c-footer-container-spacing-inline-start);}.footer-content" + shadowSelector + " {max-width: var(--dxp-c-footer-content-max-width, var(--dxp-s-footer-content-max-width));flex: 1 1 auto;}@media (max-width: 48em) {header" + shadowSelector + " {padding: var(--dxp-c-header-container-spacing-block-start-mobile)\n var(--dxp-c-header-container-spacing-inline-end-mobile)\n var(--dxp-c-header-container-spacing-block-end-mobile)\n var(--dxp-c-header-container-spacing-inline-start-mobile);}.header-content" + shadowSelector + " {max-width: var(\n --dxp-c-header-content-max-width-mobile,\n var(--dxp-s-header-content-max-width-mobile)\n );}footer" + shadowSelector + " {padding: var(--dxp-c-footer-container-spacing-block-start-mobile)\n var(--dxp-c-footer-container-spacing-inline-end-mobile)\n var(--dxp-c-footer-container-spacing-block-end-mobile)\n var(--dxp-c-footer-container-spacing-inline-start-mobile);}.footer-content" + shadowSelector + " {max-width: var(\n --dxp-c-footer-content-max-width-mobile,\n var(--dxp-s-footer-content-max-width-mobile)\n );}}";
+      /*LWC compiler v3.0.4*/
+    }
+    var _implicitStylesheets = [stylesheet];
+
+    const stc0 = {
+      "data-f6-region": ""
+    };
+    const stc1 = {
+      classMap: {
+        "header-content": true
+      },
+      key: 1
+    };
+    const stc2 = {
+      attrs: {
+        "name": "header"
+      },
+      key: 2
+    };
+    const stc3 = [];
+    const stc4 = {
+      "data-f6-region": "",
+      "role": "main"
+    };
+    const stc5 = {
+      key: 4
+    };
+    const stc6 = {
+      classMap: {
+        "footer-content": true
+      },
+      key: 6
+    };
+    const stc7 = {
+      attrs: {
+        "name": "footer"
+      },
+      key: 7
+    };
+    function tmpl($api, $cmp, $slotset, $ctx) {
+      const {s: api_slot, h: api_element} = $api;
+      return [api_element("header", {
+        style: $cmp.headerStyle,
+        attrs: stc0,
+        key: 0
+      }, [api_element("div", stc1, [api_slot("header", stc2, stc3, $slotset)])]), api_element("main", {
+        style: $cmp.mainStyle,
+        attrs: stc4,
+        key: 3
+      }, [api_slot("", stc5, stc3, $slotset)]), api_element("footer", {
+        style: $cmp.footerStyle,
+        attrs: stc0,
+        key: 5
+      }, [api_element("div", stc6, [api_slot("footer", stc7, stc3, $slotset)])])];
+      /*LWC compiler v3.0.4*/
+    }
+    var _tmpl = lwc.registerTemplate(tmpl);
+    tmpl.slots = ["", "footer", "header"];
+    tmpl.stylesheets = [];
+
+
+    if (_implicitStylesheets) {
+      tmpl.stylesheets.push.apply(tmpl.stylesheets, _implicitStylesheets);
+    }
+    tmpl.stylesheetToken = "lwc-3rcll229rc6";
+    tmpl.legacyStylesheetToken = "community_layout-simpleThemeLayout_simpleThemeLayout";
+    lwc.freezeTemplate(tmpl);
+
+    /**
+     * A simple Theme Layout component with a header, footer, and main area.
+     * This @slot comment is important, if it doesn't exist the slots will not be accessible
+     *
+     * @slot header Header slot
+     * @slot footer Footer slot
+     * @slot default Default slot
+     */
+    class SimpleThemeLayout extends lwc.LightningElement {
+      constructor(...args) {
+        super(...args);
+        /**
+         * Header background color in string format.
+         * @type {string}
+         */
+        this.headerBackgroundColor = void 0;
+        /**
+         * Main area background color in string format.
+         * @type {string}
+         */
+        this.mainBackgroundColor = void 0;
+        /**
+         * Footer background color in string format.
+         * @type {string}
+         */
+        this.footerBackgroundColor = void 0;
+      }
+      get headerStyle() {
+        return `background-color: ${this.headerBackgroundColor}`;
+      }
+      get footerStyle() {
+        return `background-color: ${this.footerBackgroundColor}`;
+      }
+      get mainStyle() {
+        return `background-color: ${this.mainBackgroundColor}`;
+      }
+      /*LWC compiler v3.0.4*/
+    }
+    lwc.registerDecorators(SimpleThemeLayout, {
+      publicProps: {
+        headerBackgroundColor: {
+          config: 0
+        },
+        mainBackgroundColor: {
+          config: 0
+        },
+        footerBackgroundColor: {
+          config: 0
+        }
+      }
+    });
+    var simpleThemeLayout = lwc.registerComponent(SimpleThemeLayout, {
+      tmpl: _tmpl,
+      sel: "community_layout-simple-theme-layout",
+      apiVersion: 59
+    });
+
+    exports.default = simpleThemeLayout;
+
+    Object.defineProperty(exports, '__esModule', { value: true });
+
+}));
+})();
+(function() { LWR.define('@view/serviceNotAvailable', ['exports', 'lwc', 'webruntime/routerContainer', 'community_layout/simpleThemeLayout'], (function (exports, lwc, _webruntimeRouterContainer, _community_layoutSimpleThemeLayout) {
+
+  function _interopDefaultCompat (e) { return e && typeof e === 'object' && 'default' in e ? e : { default: e }; }
+
+  var _webruntimeRouterContainer__default = /*#__PURE__*/_interopDefaultCompat(_webruntimeRouterContainer);
+  var _community_layoutSimpleThemeLayout__default = /*#__PURE__*/_interopDefaultCompat(_community_layoutSimpleThemeLayout);
+
+  const stc0 = {
+    key: 0
+  };
+  function tmpl($api, $cmp, $slotset, $ctx) {
+    const {c: api_custom_element} = $api;
+    return [api_custom_element("community_layout-simple-theme-layout", _community_layoutSimpleThemeLayout__default.default, stc0, [api_custom_element("webruntime-router-container", _webruntimeRouterContainer__default.default, {
+      props: {
+        "view": $cmp.routerContainerView,
+        "routeParams": $cmp.routeParams
+      },
+      key: 1
+    })])];
+    /*LWC compiler v3.0.4*/
+  }
+  var _tmpl = lwc.registerTemplate(tmpl);
+  tmpl.stylesheets = [];
+  tmpl.renderMode = "light";
+  tmpl.stylesheetToken = "lwc-1sj8536e2s1";
+  tmpl.legacyStylesheetToken = "___at___view-serviceNotAvailable_serviceNotAvailable";
+  lwc.freezeTemplate(tmpl);
+
+  class Generated {
+    static get html() {
+      return _tmpl;
+    }
+    static get attributes() {
+      return function getAttributeSet(cmp) {
+        return {};
+      };
+    }
+  }
+  var serviceNotAvailable = lwc.registerComponent(Generated, {
+    tmpl: _tmpl,
+    sel: "@view-service-not-available",
+    apiVersion: 59
+  });
+
+  exports.default = serviceNotAvailable;
+
+  Object.defineProperty(exports, '__esModule', { value: true });
+
+}));
+})();

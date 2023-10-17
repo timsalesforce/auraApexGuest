@@ -1,0 +1,4809 @@
+LWR.define("lwr/metrics/v/0_10_10", ["exports"], function(exports) {
+  "use strict";
+  const BOOTSTRAP_PREFIX = "lwr.bootstrap.";
+  const BOOTSTRAP_END = `${BOOTSTRAP_PREFIX}end`;
+  const BOOTSTRAP_ERROR = `${BOOTSTRAP_PREFIX}error`;
+  const BOOTSTRAP_ERROR_COUNT = `${BOOTSTRAP_ERROR}.count`;
+  const BOOTSTRAP_DURATION = `${BOOTSTRAP_PREFIX}duration`;
+  const INIT = "lwr.bootstrap.init";
+  const INIT_DURATION = `${INIT}.duration`;
+  const INIT_MODULE = `lwr.bootstrap.init.module`;
+  const INIT_MODULE_DURATION = `${INIT_MODULE}.duration`;
+  const INIT_MODULE_COUNT = `${INIT_MODULE}.count`;
+  const LOADER_PREFIX = "lwr.loader.";
+  const MODULE_DEFINE = `${LOADER_PREFIX}module.define`;
+  const MODULE_DEFINE_COUNT = `${MODULE_DEFINE}.count`;
+  const MODULE_FETCH = `${LOADER_PREFIX}module.fetch`;
+  const MODULE_FETCH_COUNT = `${MODULE_FETCH}.count`;
+  const MODULE_FETCH_DURATION = `${MODULE_FETCH}.duration`;
+  const MODULE_ERROR = `${LOADER_PREFIX}module.error`;
+  const MODULE_ERROR_COUNT = `${MODULE_ERROR}.count`;
+  const MAPPINGS_FETCH = `${LOADER_PREFIX}mappings.fetch`;
+  const MAPPINGS_FETCH_COUNT = `${MAPPINGS_FETCH}.count`;
+  const MAPPINGS_FETCH_DURATION = `${MAPPINGS_FETCH}.duration`;
+  const MAPPINGS_ERROR = `${LOADER_PREFIX}mappings.error`;
+  const MAPPINGS_ERROR_COUNT = `${MAPPINGS_ERROR}.count`;
+  const ROUTER_PREFIX = "lwr.router.";
+  const ROUTER_NAV = `${ROUTER_PREFIX}navigate`;
+  const ROUTER_NAV_COUNT = `${ROUTER_NAV}.count`;
+  const ROUTER_NAV_DURATION = `${ROUTER_NAV}.duration`;
+  const ROUTER_VIEW = `${ROUTER_PREFIX}view`;
+  const ROUTER_VIEW_DURATION = `${ROUTER_VIEW}.duration`;
+  const ROUTER_ERROR = `${ROUTER_PREFIX}error`;
+  const ROUTER_ERROR_COUNT = `${ROUTER_ERROR}.count`;
+  exports.BOOTSTRAP_DURATION = BOOTSTRAP_DURATION;
+  exports.BOOTSTRAP_END = BOOTSTRAP_END;
+  exports.BOOTSTRAP_ERROR = BOOTSTRAP_ERROR;
+  exports.BOOTSTRAP_ERROR_COUNT = BOOTSTRAP_ERROR_COUNT;
+  exports.BOOTSTRAP_PREFIX = BOOTSTRAP_PREFIX;
+  exports.INIT = INIT;
+  exports.INIT_DURATION = INIT_DURATION;
+  exports.INIT_MODULE = INIT_MODULE;
+  exports.INIT_MODULE_COUNT = INIT_MODULE_COUNT;
+  exports.INIT_MODULE_DURATION = INIT_MODULE_DURATION;
+  exports.LOADER_PREFIX = LOADER_PREFIX;
+  exports.MAPPINGS_ERROR = MAPPINGS_ERROR;
+  exports.MAPPINGS_ERROR_COUNT = MAPPINGS_ERROR_COUNT;
+  exports.MAPPINGS_FETCH = MAPPINGS_FETCH;
+  exports.MAPPINGS_FETCH_COUNT = MAPPINGS_FETCH_COUNT;
+  exports.MAPPINGS_FETCH_DURATION = MAPPINGS_FETCH_DURATION;
+  exports.MODULE_DEFINE = MODULE_DEFINE;
+  exports.MODULE_DEFINE_COUNT = MODULE_DEFINE_COUNT;
+  exports.MODULE_ERROR = MODULE_ERROR;
+  exports.MODULE_ERROR_COUNT = MODULE_ERROR_COUNT;
+  exports.MODULE_FETCH = MODULE_FETCH;
+  exports.MODULE_FETCH_COUNT = MODULE_FETCH_COUNT;
+  exports.MODULE_FETCH_DURATION = MODULE_FETCH_DURATION;
+  exports.ROUTER_ERROR = ROUTER_ERROR;
+  exports.ROUTER_ERROR_COUNT = ROUTER_ERROR_COUNT;
+  exports.ROUTER_NAV = ROUTER_NAV;
+  exports.ROUTER_NAV_COUNT = ROUTER_NAV_COUNT;
+  exports.ROUTER_NAV_DURATION = ROUTER_NAV_DURATION;
+  exports.ROUTER_PREFIX = ROUTER_PREFIX;
+  exports.ROUTER_VIEW = ROUTER_VIEW;
+  exports.ROUTER_VIEW_DURATION = ROUTER_VIEW_DURATION;
+  Object.defineProperty(exports, "__esModule", {value: true});
+});
+LWR.define("lwr/metrics", ["exports", "lwr/metrics/v/0_10_10"], function(e, m) {
+  e.default = m && typeof m == "object" && "default" in m ? m.default : m;
+  Object.keys(m).forEach(function(n) {
+    n === "default" || e.hasOwnProperty(n) || Object.defineProperty(e, n, {enumerable: true, get: function() {
+      return m[n];
+    }});
+  });
+});
+LWR.define("lwr/init/v/0_10_10", ["exports", "lwr/metrics/v/0_10_10", "lwr/profiler/v/0_10_10", "lwc/v/3_0_4"], function(exports, _0_10_10$1, _0_10_10, _3_0_4) {
+  "use strict";
+  function hydrateComponentProxy(customElement, Ctor, props) {
+    _3_0_4.hydrateComponent(customElement, Ctor, props);
+  }
+  function initializeWebComponent(elementName, Ctor) {
+    return _3_0_4.createElement(elementName, {
+      is: Ctor
+    });
+  }
+  function toKebabCase(specifier) {
+    return specifier.replace(/\/v\/[a-zA-Z0-9-_.]+$/, "").replace("/", "-").replace(/([A-Z])/g, (c) => `-${c.toLowerCase()}`);
+  }
+  const CAMEL_REGEX = /-([a-z])/g;
+  function getPropFromAttrName(propName) {
+    return propName.replace(CAMEL_REGEX, (g) => g[1].toUpperCase());
+  }
+  function init(rootModules, ssrProps = {}) {
+    if (typeof customElements === "undefined" || typeof document === "undefined") {
+      _0_10_10.logOperationStart({
+        id: _0_10_10$1.BOOTSTRAP_END
+      });
+      return;
+    }
+    _0_10_10.logOperationStart({
+      id: _0_10_10$1.INIT
+    });
+    let index = 0;
+    for (const [specifier, ctor] of rootModules) {
+      const elementName = toKebabCase(specifier);
+      if (!document.body.querySelector(elementName)) {
+        _0_10_10.logOperationStart({
+          id: _0_10_10$1.INIT_MODULE,
+          specifier,
+          specifierIndex: ++index
+        });
+        const component = initializeWebComponent(elementName, ctor);
+        const container = document.querySelector("[lwr-root]");
+        container ? container.appendChild(component) : document.body.appendChild(component);
+        _0_10_10.logOperationEnd({
+          id: _0_10_10$1.INIT_MODULE,
+          specifier,
+          specifierIndex: index,
+          metadata: {
+            renderMode: "spa"
+          }
+        });
+        continue;
+      }
+      const elements = document.querySelectorAll(elementName);
+      for (const element of elements) {
+        _0_10_10.logOperationStart({
+          id: _0_10_10$1.INIT_MODULE,
+          specifier,
+          specifierIndex: ++index
+        });
+        const propsId = element.dataset.lwrPropsId;
+        if (propsId) {
+          hydrateComponentProxy(element, ctor, ssrProps[propsId] || {});
+          _0_10_10.logOperationEnd({
+            id: _0_10_10$1.INIT_MODULE,
+            specifier,
+            specifierIndex: index,
+            metadata: {
+              renderMode: "ssr"
+            }
+          });
+          continue;
+        }
+        const component = initializeWebComponent(elementName, ctor);
+        for (const {
+          name,
+          value
+        } of element.attributes) {
+          component.setAttribute(name, value);
+          const prop = getPropFromAttrName(name);
+          if (prop in component) {
+            component[prop] = value;
+          }
+        }
+        while (element.childNodes.length > 0) {
+          component.appendChild(element.childNodes[0]);
+        }
+        const parent = element.parentElement;
+        if (parent) {
+          parent.replaceChild(component, element);
+        }
+        _0_10_10.logOperationEnd({
+          id: _0_10_10$1.INIT_MODULE,
+          specifier,
+          specifierIndex: index,
+          metadata: {
+            renderMode: "csr"
+          }
+        });
+      }
+    }
+    _0_10_10.logOperationEnd({
+      id: _0_10_10$1.INIT
+    });
+    _0_10_10.logOperationStart({
+      id: _0_10_10$1.BOOTSTRAP_END
+    });
+  }
+  exports.getPropFromAttrName = getPropFromAttrName;
+  exports.init = init;
+  exports.toKebabCase = toKebabCase;
+  Object.defineProperty(exports, "__esModule", {value: true});
+});
+LWR.define("lwr/init", ["exports", "lwr/init/v/0_10_10"], function(e, m) {
+  e.default = m && typeof m == "object" && "default" in m ? m.default : m;
+  Object.keys(m).forEach(function(n) {
+    n === "default" || e.hasOwnProperty(n) || Object.defineProperty(e, n, {enumerable: true, get: function() {
+      return m[n];
+    }});
+  });
+});
+LWR.define("webruntime/utils/v/1_66_439-246_0", ["exports"], function(exports) {
+  "use strict";
+  function assert(assertion, message) {
+    if (!assertion) {
+      throw new Error(message);
+    }
+  }
+  function isObject(obj) {
+    return typeof obj === "object" && obj !== null && !Array.isArray(obj);
+  }
+  function getCookie(cookieName) {
+    return typeof document !== "undefined" && document?.cookie.split(";").map((s) => s.trim().split("=")).filter(([name]) => name === cookieName).map(([, value]) => value)[0];
+  }
+  function uuidv4() {
+    return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) => (c ^ window.crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
+  }
+  function uuidValidate(uuid) {
+    return typeof uuid === "string" && /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|00000000-0000-0000-0000-000000000000)$/i.test(uuid);
+  }
+  const absoluteUrlRegex = new RegExp("^([a-z]+://|//)", "i");
+  function isAbsoluteURL(url) {
+    if (!url) {
+      return false;
+    }
+    return absoluteUrlRegex.test(url);
+  }
+  exports.assert = assert;
+  exports.getCookie = getCookie;
+  exports.isAbsoluteURL = isAbsoluteURL;
+  exports.isObject = isObject;
+  exports.uuidValidate = uuidValidate;
+  exports.uuidv4 = uuidv4;
+  Object.defineProperty(exports, "__esModule", {value: true});
+});
+LWR.define("webruntime/utils", ["exports", "webruntime/utils/v/1_66_439-246_0"], function(e, m) {
+  e.default = m && typeof m == "object" && "default" in m ? m.default : m;
+  Object.keys(m).forEach(function(n) {
+    n === "default" || e.hasOwnProperty(n) || Object.defineProperty(e, n, {enumerable: true, get: function() {
+      return m[n];
+    }});
+  });
+});
+LWR.define("webruntime/appUserLoaderHook/v/1_66_439-246_0", ["exports", "@app/authenticationCookieName/v/1", "webruntime/utils/v/1_66_439-246_0"], function(exports, authenticationCookieName, _1_66_439246_0) {
+  "use strict";
+  function _interopDefaultLegacy(e) {
+    return e && typeof e === "object" && "default" in e ? e : {default: e};
+  }
+  var authenticationCookieName__default = /* @__PURE__ */ _interopDefaultLegacy(authenticationCookieName);
+  const APP_USER_SPECIFIER = "@app/user";
+  const VERSIONED_APP_USER_SPECIFIER = `${APP_USER_SPECIFIER}/v/1`;
+  const {
+    LWR: LWR2
+  } = globalThis;
+  if (authenticationCookieName__default["default"] && !_1_66_439246_0.getCookie(authenticationCookieName__default["default"])) {
+    LWR2.define(VERSIONED_APP_USER_SPECIFIER, [APP_USER_SPECIFIER], function(m) {
+      return m && typeof m === "object" && "default" in m ? m.default : m;
+    });
+    LWR2.define(APP_USER_SPECIFIER, ["exports"], (exports2) => {
+      exports2.default = {
+        isGuest: true,
+        id: null,
+        csrfToken: null
+      };
+    });
+  }
+  function noop() {
+  }
+  exports["default"] = noop;
+  Object.defineProperty(exports, "__esModule", {value: true});
+});
+LWR.define("webruntime/appUserLoaderHook", ["exports", "webruntime/appUserLoaderHook/v/1_66_439-246_0"], function(e, m) {
+  e.default = m && typeof m == "object" && "default" in m ? m.default : m;
+  Object.keys(m).forEach(function(n) {
+    n === "default" || e.hasOwnProperty(n) || Object.defineProperty(e, n, {enumerable: true, get: function() {
+      return m[n];
+    }});
+  });
+});
+LWR.define("webruntime/dynamicImportResourceHook/v/1_66_439-246_0", ["exports", "@app/basePath/v/1", "@app/versionKey/v/1"], function(exports, basePath, versionKey) {
+  "use strict";
+  function _interopDefaultLegacy(e) {
+    return e && typeof e === "object" && "default" in e ? e : {default: e};
+  }
+  var basePath__default = /* @__PURE__ */ _interopDefaultLegacy(basePath);
+  var versionKey__default = /* @__PURE__ */ _interopDefaultLegacy(versionKey);
+  function DynamicImportResourceHook(serviceAPI) {
+    const resourceUrlSpecifier = "@salesforce/resourceUrl/";
+    const resourceUrlResolvedBaseUrl = "resourceUrl://";
+    serviceAPI.addLoaderPlugin({
+      resolveModule: async (id) => {
+        if (id.startsWith(resourceUrlSpecifier)) {
+          return {
+            url: `${resourceUrlResolvedBaseUrl}${id}`
+          };
+        }
+        return null;
+      },
+      loadModule: async (url) => {
+        if (url.startsWith(resourceUrlResolvedBaseUrl)) {
+          const parts = url.split("/");
+          const name = parts[parts.length - 1];
+          return {
+            data: `LWR.define('${resourceUrlSpecifier}${name}', ['exports'], function(exports) {
+                        exports.default = '${basePath__default["default"]}/webruntime/org-asset/${versionKey__default["default"]}/resource-name/${name}';
+                    });`,
+            status: 200
+          };
+        }
+        return null;
+      }
+    });
+  }
+  exports["default"] = DynamicImportResourceHook;
+  Object.defineProperty(exports, "__esModule", {value: true});
+});
+LWR.define("webruntime/dynamicImportResourceHook", ["exports", "webruntime/dynamicImportResourceHook/v/1_66_439-246_0"], function(e, m) {
+  e.default = m && typeof m == "object" && "default" in m ? m.default : m;
+  Object.keys(m).forEach(function(n) {
+    n === "default" || e.hasOwnProperty(n) || Object.defineProperty(e, n, {enumerable: true, get: function() {
+      return m[n];
+    }});
+  });
+});
+LWR.define("o11y_schema/sf_clwr/v/246_26_1", ["exports"], function(exports) {
+  "use strict";
+  var app_payload = {namespace: "sf.clwr", name: "AppPayload", pbjsSchema: {nested: {sf: {nested: {clwr: {nested: {AppPayload: {oneofs: {_bootstrap: {oneof: ["bootstrap"]}}, fields: {visd: {id: 1, type: "double"}, isPreview: {id: 4, type: "bool"}, siteId: {id: 6, type: "string"}, isMobile: {id: 3, type: "bool"}, bootstrap: {options: {proto3_optional: true}, id: 9, type: "double"}, lang: {id: 5, type: "string"}, isDesign: {id: 2, type: "bool"}, vKey: {id: 7, type: "string"}, deployTarget: {
+    id: 8,
+    type: "string"
+  }}}}}}}}}};
+  var nav = {namespace: "sf.clwr", name: "Nav", pbjsSchema: {nested: {sf: {nested: {clwr: {nested: {Nav: {fields: {isIdleHit: {id: 1, type: "bool"}, isManual: {id: 2, type: "bool"}}}}}}}}}};
+  var nav_transition = {namespace: "sf.clwr", name: "NavTransition", pbjsSchema: {nested: {sf: {nested: {clwr: {nested: {NavTransition: {fields: {code: {id: 4, type: "string"}, isSsr: {id: 3, type: "bool"}, level: {id: 5, type: "string"}, nextUrl: {id: 1, type: "string"}, type: {id: 2, type: "string"}}}}}}}}}};
+  var page_payload = {namespace: "sf.clwr", name: "PagePayload", pbjsSchema: {nested: {sf: {nested: {clwr: {nested: {PagePayload: {fields: {isSsr: {id: 3, type: "bool"}, type: {id: 2, type: "string"}, url: {id: 1, type: "string"}}}}}}}}}};
+  var root = {namespace: "sf.clwr", name: "Root", pbjsSchema: {nested: {sf: {nested: {clwr: {nested: {Root: {oneofs: {_bootstrap: {oneof: ["bootstrap"]}}, fields: {sequence: {id: 1, type: "uint32"}, navCount: {id: 2, type: "uint32"}, clickCount: {id: 3, type: "uint32"}, isManual: {id: 4, type: "bool"}, bootstrap: {options: {proto3_optional: true}, id: 5, type: "double"}}}}}}}}}};
+  exports.appPayloadSchema = app_payload;
+  exports.navSchema = nav;
+  exports.navTransitionSchema = nav_transition;
+  exports.pagePayloadSchema = page_payload;
+  exports.rootSchema = root;
+  Object.defineProperty(exports, "__esModule", {value: true});
+});
+LWR.define("o11y_schema/sf_clwr", ["exports", "o11y_schema/sf_clwr/v/246_26_1"], function(e, m) {
+  e.default = m && typeof m == "object" && "default" in m ? m.default : m;
+  Object.keys(m).forEach(function(n) {
+    n === "default" || e.hasOwnProperty(n) || Object.defineProperty(e, n, {enumerable: true, get: function() {
+      return m[n];
+    }});
+  });
+});
+LWR.define("o11y_schema/sf_instrumentation/v/246_26_1", ["exports"], function(exports) {
+  "use strict";
+  var activity = {namespace: "sf.instrumentation", name: "Activity", pbjsSchema: {nested: {sf: {nested: {instrumentation: {nested: {Activity: {reserved: [[5, 5], [7, 7]], fields: {
+    duration: {id: 3, type: "double"},
+    stopReason: {id: 6, type: "string"},
+    isRoot: {id: 8, type: "bool"},
+    timerOverridden: {id: 12, type: "uint32"},
+    name: {options: {"(meta.max_length)": 25}, id: 2, type: "string"},
+    isSampled: {id: 11, type: "bool"},
+    preRootId: {id: 9, type: "string"},
+    id: {id: 1, type: "string"},
+    userPayload: {id: 4, type: "Payload"},
+    errorCount: {id: 10, type: "uint32"},
+    parentId: {id: 13, type: "string"}
+  }}, Payload: {fields: {payload: {id: 2, type: "bytes"}, schemaName: {id: 1, type: "string"}}}}}}}}}};
+  var basic_page = {namespace: "sf.instrumentation", name: "BasicPage", pbjsSchema: {nested: {sf: {nested: {instrumentation: {nested: {BasicPage: {fields: {entityType: {id: 3, type: "string"}, entityId: {id: 2, type: "string"}, url: {id: 1, type: "string"}}}}}}}}}};
+  var core_envelope = {namespace: "sf.instrumentation", name: "CoreEnvelope", pbjsSchema: {nested: {sf: {nested: {instrumentation: {nested: {MessageBundle: {fields: {messages: {rule: "repeated", id: 2, type: "LogMessage"}, schemaName: {id: 1, type: "string"}}}, Metrics: {fields: {globalMetricTags: {rule: "repeated", id: 4, type: "MetricTag"}, bucketHistograms: {rule: "repeated", id: 3, type: "BucketHistogram"}, valueRecorders: {rule: "repeated", id: 2, type: "ValueRecorder"}, upCounters: {
+    rule: "repeated",
+    id: 1,
+    type: "UpCounter"
+  }}}, CoreEnvelopeDiagnostics: {fields: {schemaVersion: {id: 6, type: "string"}, generatedTimestamp: {id: 2, type: "double"}, bundleCount: {id: 3, type: "uint32"}, upCounterCount: {id: 4, type: "uint32"}, valueRecorderCount: {id: 5, type: "uint32"}, key: {id: 1, type: "string"}, bucketHistogramCount: {id: 7, type: "uint32"}}}, LogMessage: {fields: {data: {id: 2, type: "bytes"}, rootId: {id: 4, type: "string"}, csId: {id: 12, type: "string"}, recCsId: {
+    id: 13,
+    type: "string"
+  }, pagePayload: {id: 7, type: "Payload"}, connectionType: {id: 9, type: "string"}, appPayload: {id: 10, type: "Payload"}, loggerAppName: {id: 8, type: "string"}, sseq: {id: 11, type: "uint32"}, recRootId: {id: 14, type: "string"}, loggerName: {id: 6, type: "string"}, age: {id: 3, type: "double"}, seq: {id: 5, type: "uint32"}, timestamp: {id: 1, type: "double"}}}, CoreEnvelope: {fields: {diagnostics: {id: 1, type: "CoreEnvelopeDiagnostics"}, bundles: {
+    rule: "repeated",
+    id: 2,
+    type: "MessageBundle"
+  }, metrics: {id: 3, type: "Metrics"}, staticAttributes: {id: 4, type: "StaticAttributes"}}}, MetricTag: {fields: {name: {id: 1, type: "string"}, value: {id: 2, type: "string"}}}, BucketHistogram: {fields: {
+    lastUpdatedTimestamp: {id: 3, type: "double"},
+    ownerName: {id: 7, type: "string"},
+    ownerAppName: {id: 8, type: "string"},
+    createdTimestamp: {id: 2, type: "double"},
+    values: {rule: "repeated", id: 4, type: "double"},
+    buckets: {rule: "repeated", id: 5, type: "uint32"},
+    name: {id: 1, type: "string"},
+    tags: {rule: "repeated", id: 6, type: "MetricTag"}
+  }}, ValueRecorder: {fields: {lastUpdatedTimestamp: {id: 3, type: "double"}, ownerName: {id: 6, type: "string"}, ownerAppName: {id: 7, type: "string"}, createdTimestamp: {id: 2, type: "double"}, values: {rule: "repeated", id: 4, type: "double"}, name: {id: 1, type: "string"}, tags: {rule: "repeated", id: 5, type: "MetricTag"}}}, StaticAttributes: {fields: {appVersion: {id: 2, type: "string"}, appName: {
+    id: 1,
+    type: "string"
+  }, deviceModel: {id: 5, type: "string"}, sdkVersion: {id: 6, type: "string"}, deviceId: {id: 4, type: "string"}, appExperience: {id: 3, type: "string"}}}, Payload: {fields: {payload: {id: 2, type: "bytes"}, schemaName: {id: 1, type: "string"}}}, UpCounter: {fields: {lastUpdatedTimestamp: {id: 3, type: "double"}, ownerName: {id: 6, type: "string"}, ownerAppName: {id: 7, type: "string"}, createdTimestamp: {id: 2, type: "double"}, name: {id: 1, type: "string"}, value: {
+    id: 4,
+    type: "uint32"
+  }, tags: {rule: "repeated", id: 5, type: "MetricTag"}}}}}}}}}};
+  var error = {namespace: "sf.instrumentation", name: "Error", pbjsSchema: {nested: {sf: {nested: {instrumentation: {nested: {Error: {reserved: [[5, 5], [7, 7]], fields: {activityId: {id: 6, type: "string"}, stack: {id: 3, type: "string"}, name: {id: 1, type: "string"}, message: {options: {"(meta.max_length)": 200}, id: 2, type: "string"}, userPayload: {id: 4, type: "Payload"}}}, Payload: {fields: {payload: {id: 2, type: "bytes"}, schemaName: {id: 1, type: "string"}}}}}}}}}};
+  var idle_detector_report = {namespace: "sf.instrumentation", name: "IdleDetectorReport", pbjsSchema: {nested: {sf: {nested: {instrumentation: {nested: {IdleDetectorReport: {fields: {listenerCount: {id: 3, type: "uint32"}, busyTasks: {rule: "repeated", id: 5, type: "string"}, busyDurations: {rule: "repeated", id: 6, type: "double"}, pollableCount: {id: 4, type: "uint32"}, pollCounts: {rule: "repeated", id: 8, type: "double"}, logThreshold: {id: 2, type: "double"}, maxDuration: {
+    id: 1,
+    type: "double"
+  }, pollables: {rule: "repeated", id: 7, type: "string"}}}}}}}}}};
+  var instrumented_event = {namespace: "sf.instrumentation", name: "InstrumentedEvent", pbjsSchema: {nested: {sf: {nested: {instrumentation: {nested: {MouseEvent: {fields: {cancelable: {id: 5, type: "bool"}, ctrlKey: {id: 9, type: "bool"}, type: {id: 25, type: "string"}, button: {id: 3, type: "uint32"}, offsetX: {id: 17, type: "uint32"}, eventPhase: {id: 12, type: "uint32"}, shiftKey: {id: 23, type: "bool"}, offsetY: {id: 18, type: "uint32"}, composed: {id: 8, type: "bool"}, altKey: {
+    id: 1,
+    type: "bool"
+  }, isTrusted: {id: 13, type: "bool"}, buttons: {id: 4, type: "uint32"}, movementY: {id: 16, type: "uint32"}, clientY: {id: 7, type: "uint32"}, clientX: {id: 6, type: "uint32"}, movementX: {id: 15, type: "uint32"}, defaultPrevented: {id: 10, type: "bool"}, metaKey: {id: 14, type: "bool"}, timeStamp: {id: 24, type: "double"}, bubbles: {id: 2, type: "bool"}, detail: {id: 11, type: "int64"}, pageY: {id: 20, type: "uint32"}, pageX: {id: 19, type: "uint32"}, screenX: {
+    id: 21,
+    type: "uint32"
+  }, screenY: {id: 22, type: "uint32"}}}, InstrumentedEvent: {oneofs: {event: {oneof: ["mouseEvent"]}}, reserved: [[4, 4], "xpath", [6, 6], [8, 8]], fields: {mouseEvent: {id: 7, type: "MouseEvent"}, auto: {id: 3, type: "bool"}, parentComponent: {id: 2, type: "string"}, ownerComponent: {id: 1, type: "string"}, userPayload: {id: 5, type: "Payload"}, simplePath: {id: 9, type: "string"}}}, Payload: {fields: {payload: {id: 2, type: "bytes"}, schemaName: {id: 1, type: "string"}}}}}}}}}};
+  var mouse_event = {namespace: "sf.instrumentation", name: "MouseEvent", pbjsSchema: {nested: {sf: {nested: {instrumentation: {nested: {MouseEvent: {fields: {
+    cancelable: {id: 5, type: "bool"},
+    ctrlKey: {id: 9, type: "bool"},
+    type: {id: 25, type: "string"},
+    button: {id: 3, type: "uint32"},
+    offsetX: {id: 17, type: "uint32"},
+    eventPhase: {id: 12, type: "uint32"},
+    shiftKey: {id: 23, type: "bool"},
+    offsetY: {id: 18, type: "uint32"},
+    composed: {id: 8, type: "bool"},
+    altKey: {id: 1, type: "bool"},
+    isTrusted: {id: 13, type: "bool"},
+    buttons: {id: 4, type: "uint32"},
+    movementY: {id: 16, type: "uint32"},
+    clientY: {id: 7, type: "uint32"},
+    clientX: {id: 6, type: "uint32"},
+    movementX: {id: 15, type: "uint32"},
+    defaultPrevented: {id: 10, type: "bool"},
+    metaKey: {id: 14, type: "bool"},
+    timeStamp: {id: 24, type: "double"},
+    bubbles: {id: 2, type: "bool"},
+    detail: {id: 11, type: "int64"},
+    pageY: {id: 20, type: "uint32"},
+    pageX: {id: 19, type: "uint32"},
+    screenX: {id: 21, type: "uint32"},
+    screenY: {id: 22, type: "uint32"}
+  }}}}}}}}};
+  var network = {namespace: "sf.instrumentation", name: "Network", pbjsSchema: {nested: {sf: {nested: {instrumentation: {nested: {Network: {fields: {mtd: {id: 1, type: "string"}, url: {id: 2, type: "string"}}}}}}}}}};
+  var payload = {namespace: "sf.instrumentation", name: "Payload", pbjsSchema: {nested: {sf: {nested: {instrumentation: {nested: {Payload: {fields: {payload: {id: 2, type: "bytes"}, schemaName: {id: 1, type: "string"}}}}}}}}}};
+  var simple = {namespace: "sf.instrumentation", name: "Simple", pbjsSchema: {nested: {sf: {nested: {instrumentation: {nested: {Simple: {fields: {text: {options: {"(meta.max_length)": 25}, id: 1, type: "string"}}}}}}}}}};
+  var web_vitals = {namespace: "sf.instrumentation", name: "WebVitals", pbjsSchema: {nested: {sf: {nested: {instrumentation: {nested: {WebVitals: {fields: {name: {id: 1, type: "string"}, delta: {id: 3, type: "double"}, value: {id: 2, type: "double"}}}}}}}}}};
+  exports.activitySchema = activity;
+  exports.basicPageSchema = basic_page;
+  exports.coreEnvelopeSchema = core_envelope;
+  exports.errorSchema = error;
+  exports.idleDetectorReportSchema = idle_detector_report;
+  exports.instrumentedEventSchema = instrumented_event;
+  exports.mouseEventSchema = mouse_event;
+  exports.networkSchema = network;
+  exports.payloadSchema = payload;
+  exports.simpleSchema = simple;
+  exports.webVitalsSchema = web_vitals;
+  Object.defineProperty(exports, "__esModule", {value: true});
+});
+LWR.define("o11y_schema/sf_instrumentation", ["exports", "o11y_schema/sf_instrumentation/v/246_26_1"], function(e, m) {
+  e.default = m && typeof m == "object" && "default" in m ? m.default : m;
+  Object.keys(m).forEach(function(n) {
+    n === "default" || e.hasOwnProperty(n) || Object.defineProperty(e, n, {enumerable: true, get: function() {
+      return m[n];
+    }});
+  });
+});
+LWR.define("o11y/web_vitals/v/246_5_0", ["exports", "o11y/client/v/1", "o11y/shared/v/1", "o11y_schema/sf_instrumentation/v/246_26_1"], function(exports, _1$1, _1, _246_26_1) {
+  "use strict";
+  var e, t, n, i, r = function(e2, t2) {
+    return {
+      name: e2,
+      value: t2 === void 0 ? -1 : t2,
+      delta: 0,
+      entries: [],
+      id: "v2-".concat(Date.now(), "-").concat(Math.floor(8999999999999 * Math.random()) + 1e12)
+    };
+  }, a = function(e2, t2) {
+    try {
+      if (PerformanceObserver.supportedEntryTypes.includes(e2)) {
+        if (e2 === "first-input" && !("PerformanceEventTiming" in self))
+          return;
+        var n2 = new PerformanceObserver(function(e3) {
+          return e3.getEntries().map(t2);
+        });
+        return n2.observe({
+          type: e2,
+          buffered: true
+        }), n2;
+      }
+    } catch (e3) {
+    }
+  }, o = function(e2, t2) {
+    var n2 = function n3(i2) {
+      i2.type !== "pagehide" && document.visibilityState !== "hidden" || (e2(i2), t2 && (removeEventListener("visibilitychange", n3, true), removeEventListener("pagehide", n3, true)));
+    };
+    addEventListener("visibilitychange", n2, true), addEventListener("pagehide", n2, true);
+  }, u = function(e2) {
+    addEventListener("pageshow", function(t2) {
+      t2.persisted && e2(t2);
+    }, true);
+  }, c = function(e2, t2, n2) {
+    var i2;
+    return function(r2) {
+      t2.value >= 0 && (r2 || n2) && (t2.delta = t2.value - (i2 || 0), (t2.delta || i2 === void 0) && (i2 = t2.value, e2(t2)));
+    };
+  }, f = -1, s = function() {
+    return document.visibilityState === "hidden" ? 0 : 1 / 0;
+  }, m = function() {
+    o(function(e2) {
+      var t2 = e2.timeStamp;
+      f = t2;
+    }, true);
+  }, v = function() {
+    return f < 0 && (f = s(), m(), u(function() {
+      setTimeout(function() {
+        f = s(), m();
+      }, 0);
+    })), {
+      get firstHiddenTime() {
+        return f;
+      }
+    };
+  }, d = function(e2, t2) {
+    var n2, i2 = v(), o2 = r("FCP"), f2 = function(e3) {
+      e3.name === "first-contentful-paint" && (m2 && m2.disconnect(), e3.startTime < i2.firstHiddenTime && (o2.value = e3.startTime, o2.entries.push(e3), n2(true)));
+    }, s2 = window.performance && performance.getEntriesByName && performance.getEntriesByName("first-contentful-paint")[0], m2 = s2 ? null : a("paint", f2);
+    (s2 || m2) && (n2 = c(e2, o2, t2), s2 && f2(s2), u(function(i3) {
+      o2 = r("FCP"), n2 = c(e2, o2, t2), requestAnimationFrame(function() {
+        requestAnimationFrame(function() {
+          o2.value = performance.now() - i3.timeStamp, n2(true);
+        });
+      });
+    }));
+  }, p = false, l = -1, h = function(e2, t2) {
+    p || (d(function(e3) {
+      l = e3.value;
+    }), p = true);
+    var n2, i2 = function(t3) {
+      l > -1 && e2(t3);
+    }, f2 = r("CLS", 0), s2 = 0, m2 = [], v2 = function(e3) {
+      if (!e3.hadRecentInput) {
+        var t3 = m2[0], i3 = m2[m2.length - 1];
+        s2 && e3.startTime - i3.startTime < 1e3 && e3.startTime - t3.startTime < 5e3 ? (s2 += e3.value, m2.push(e3)) : (s2 = e3.value, m2 = [e3]), s2 > f2.value && (f2.value = s2, f2.entries = m2, n2());
+      }
+    }, h2 = a("layout-shift", v2);
+    h2 && (n2 = c(i2, f2, t2), o(function() {
+      h2.takeRecords().map(v2), n2(true);
+    }), u(function() {
+      s2 = 0, l = -1, f2 = r("CLS", 0), n2 = c(i2, f2, t2);
+    }));
+  }, T = {
+    passive: true,
+    capture: true
+  }, y = new Date(), g = function(i2, r2) {
+    e || (e = r2, t = i2, n = new Date(), w(removeEventListener), E());
+  }, E = function() {
+    if (t >= 0 && t < n - y) {
+      var r2 = {
+        entryType: "first-input",
+        name: e.type,
+        target: e.target,
+        cancelable: e.cancelable,
+        startTime: e.timeStamp,
+        processingStart: e.timeStamp + t
+      };
+      i.forEach(function(e2) {
+        e2(r2);
+      }), i = [];
+    }
+  }, S = function(e2) {
+    if (e2.cancelable) {
+      var t2 = (e2.timeStamp > 1e12 ? new Date() : performance.now()) - e2.timeStamp;
+      e2.type == "pointerdown" ? function(e3, t3) {
+        var n2 = function() {
+          g(e3, t3), r2();
+        }, i2 = function() {
+          r2();
+        }, r2 = function() {
+          removeEventListener("pointerup", n2, T), removeEventListener("pointercancel", i2, T);
+        };
+        addEventListener("pointerup", n2, T), addEventListener("pointercancel", i2, T);
+      }(t2, e2) : g(t2, e2);
+    }
+  }, w = function(e2) {
+    ["mousedown", "keydown", "touchstart", "pointerdown"].forEach(function(t2) {
+      return e2(t2, S, T);
+    });
+  }, L = function(n2, f2) {
+    var s2, m2 = v(), d2 = r("FID"), p2 = function(e2) {
+      e2.startTime < m2.firstHiddenTime && (d2.value = e2.processingStart - e2.startTime, d2.entries.push(e2), s2(true));
+    }, l2 = a("first-input", p2);
+    s2 = c(n2, d2, f2), l2 && o(function() {
+      l2.takeRecords().map(p2), l2.disconnect();
+    }, true), l2 && u(function() {
+      var a2;
+      d2 = r("FID"), s2 = c(n2, d2, f2), i = [], t = -1, e = null, w(addEventListener), a2 = p2, i.push(a2), E();
+    });
+  }, b = {}, F = function(e2, t2) {
+    var n2, i2 = v(), f2 = r("LCP"), s2 = function(e3) {
+      var t3 = e3.startTime;
+      t3 < i2.firstHiddenTime && (f2.value = t3, f2.entries.push(e3), n2());
+    }, m2 = a("largest-contentful-paint", s2);
+    if (m2) {
+      n2 = c(e2, f2, t2);
+      var d2 = function() {
+        b[f2.id] || (m2.takeRecords().map(s2), m2.disconnect(), b[f2.id] = true, n2(true));
+      };
+      ["keydown", "click"].forEach(function(e3) {
+        addEventListener(e3, d2, {
+          once: true,
+          capture: true
+        });
+      }), o(d2, true), u(function(i3) {
+        f2 = r("LCP"), n2 = c(e2, f2, t2), requestAnimationFrame(function() {
+          requestAnimationFrame(function() {
+            f2.value = performance.now() - i3.timeStamp, b[f2.id] = true, n2(true);
+          });
+        });
+      });
+    }
+  }, P = function(e2) {
+    var t2, n2 = r("TTFB");
+    t2 = function() {
+      try {
+        var t3 = performance.getEntriesByType("navigation")[0] || function() {
+          var e3 = performance.timing, t4 = {
+            entryType: "navigation",
+            startTime: 0
+          };
+          for (var n3 in e3)
+            n3 !== "navigationStart" && n3 !== "toJSON" && (t4[n3] = Math.max(e3[n3] - e3.navigationStart, 0));
+          return t4;
+        }();
+        if (n2.value = n2.delta = t3.responseStart, n2.value < 0 || n2.value > performance.now())
+          return;
+        n2.entries = [t3], e2(n2);
+      } catch (e3) {
+      }
+    }, document.readyState === "complete" ? setTimeout(t2, 0) : addEventListener("load", function() {
+      return setTimeout(t2, 0);
+    });
+  };
+  exports.WebVitalsMetrics = void 0;
+  (function(WebVitalsMetrics) {
+    WebVitalsMetrics[WebVitalsMetrics["CLS"] = 0] = "CLS";
+    WebVitalsMetrics[WebVitalsMetrics["FCP"] = 1] = "FCP";
+    WebVitalsMetrics[WebVitalsMetrics["FID"] = 2] = "FID";
+    WebVitalsMetrics[WebVitalsMetrics["LCP"] = 3] = "LCP";
+    WebVitalsMetrics[WebVitalsMetrics["TBT"] = 4] = "TBT";
+    WebVitalsMetrics[WebVitalsMetrics["TTFB"] = 5] = "TTFB";
+  })(exports.WebVitalsMetrics || (exports.WebVitalsMetrics = {}));
+  const defaultMetrics = [exports.WebVitalsMetrics.CLS, exports.WebVitalsMetrics.FCP, exports.WebVitalsMetrics.FID, exports.WebVitalsMetrics.LCP, exports.WebVitalsMetrics.TTFB];
+  class WebVitals {
+    constructor() {
+      this._isInitialized = false;
+      this._safety = new _1.PublicSafety();
+      this._instr = _1$1.getInstrumentation("WebVitals");
+    }
+    activate(__instr, metrics) {
+      this._safety.tryCatch(() => {
+        if (this._isInitialized) {
+          throw new Error("WebVitals is already activated.");
+        }
+        _1.utility.requireArgumentIfDefined(metrics, "metrics", Array);
+        this._isInitialized = true;
+        const metricSet = new Set(metrics || defaultMetrics);
+        if (metricSet.delete(exports.WebVitalsMetrics.CLS)) {
+          h(this._logHandler.bind(this));
+        }
+        if (metricSet.delete(exports.WebVitalsMetrics.FCP)) {
+          d(this._activityHandler.bind(this));
+        }
+        if (metricSet.delete(exports.WebVitalsMetrics.FID)) {
+          L(this._logHandler.bind(this));
+        }
+        if (metricSet.delete(exports.WebVitalsMetrics.LCP)) {
+          F(this._activityHandler.bind(this));
+        }
+        if (metricSet.delete(exports.WebVitalsMetrics.TTFB)) {
+          P(this._activityHandler.bind(this));
+        }
+        if (metricSet.size > 0) {
+          const unsupported = JSON.stringify(Array.from(metricSet.keys()));
+          this._instr.error(`Unsupported WebVital metrics: ${unsupported}`);
+        }
+      });
+    }
+    _logHandler(metric) {
+      this._instr.log(_246_26_1.webVitalsSchema, {
+        name: metric.name,
+        value: metric.value,
+        delta: metric.delta
+      });
+    }
+    _activityHandler(metric) {
+      this._instr.startActivity(metric.name).stop(void 0, void 0, {
+        perfStartOverride: 0,
+        perfStopOverride: metric.value
+      });
+    }
+  }
+  const webVitals = new WebVitals();
+  exports.webVitals = webVitals;
+  Object.defineProperty(exports, "__esModule", {value: true});
+});
+LWR.define("o11y/web_vitals", ["exports", "o11y/web_vitals/v/246_5_0"], function(e, m) {
+  e.default = m && typeof m == "object" && "default" in m ? m.default : m;
+  Object.keys(m).forEach(function(n) {
+    n === "default" || e.hasOwnProperty(n) || Object.defineProperty(e, n, {enumerable: true, get: function() {
+      return m[n];
+    }});
+  });
+});
+LWR.define("o11y_schema/version/v/246_26_1", ["exports"], function(exports) {
+  "use strict";
+  var version = "246.26.1";
+  exports.version = version;
+  Object.defineProperty(exports, "__esModule", {value: true});
+});
+LWR.define("o11y_schema/version", ["exports", "o11y_schema/version/v/246_26_1"], function(e, m) {
+  e.default = m && typeof m == "object" && "default" in m ? m.default : m;
+  Object.keys(m).forEach(function(n) {
+    n === "default" || e.hasOwnProperty(n) || Object.defineProperty(e, n, {enumerable: true, get: function() {
+      return m[n];
+    }});
+  });
+});
+LWR.define("webruntime/o11yHook/v/1_66_439-246_0", ["exports", "lwr/loaderLegacy/v/0_10_10", "@app/basePath/v/1", "webruntime/o11y/v/1", "o11y/client/v/1", "o11y_schema/version/v/246_26_1", "o11y/web_vitals/v/246_5_0", "webruntime/transport/v/1", "webruntime/dispatcher/v/1", "@communities-webruntime/common/v/1_66_439-246_0", "o11y_schema/sf_clwr/v/246_26_1", "o11y/shared/v/1", "@app/isDesignMode/v/1", "@app/isMobileAppMode/v/1", "@app/isPreviewMode/v/1", "@app/versionKey/v/1", "@app/deployTarget/v/1", "@salesforce/i18n/lang/v/1", "@salesforce/site/Id/v/1"], function(exports, _0_10_10, basePath, webruntimeO11y, _1$1, _246_26_1$1, _246_5_0, transport, dispatcher, _1_66_439246_0, _246_26_1, _1, isDesignMode, isMobileAppMode, isPreviewMode, versionKey, deployTarget, lang, siteId) {
+  "use strict";
+  function _interopDefaultLegacy(e) {
+    return e && typeof e === "object" && "default" in e ? e : {default: e};
+  }
+  function _interopNamespace(e) {
+    if (e && e.__esModule)
+      return e;
+    var n = Object.create(null);
+    if (e) {
+      Object.keys(e).forEach(function(k) {
+        if (k !== "default") {
+          var d = Object.getOwnPropertyDescriptor(e, k);
+          Object.defineProperty(n, k, d.get ? d : {
+            enumerable: true,
+            get: function() {
+              return e[k];
+            }
+          });
+        }
+      });
+    }
+    n["default"] = e;
+    return Object.freeze(n);
+  }
+  var basePath__default = /* @__PURE__ */ _interopDefaultLegacy(basePath);
+  var webruntimeO11y__namespace = /* @__PURE__ */ _interopNamespace(webruntimeO11y);
+  var transport__namespace = /* @__PURE__ */ _interopNamespace(transport);
+  var dispatcher__default = /* @__PURE__ */ _interopDefaultLegacy(dispatcher);
+  var isDesignMode__default = /* @__PURE__ */ _interopDefaultLegacy(isDesignMode);
+  var isMobileAppMode__default = /* @__PURE__ */ _interopDefaultLegacy(isMobileAppMode);
+  var isPreviewMode__default = /* @__PURE__ */ _interopDefaultLegacy(isPreviewMode);
+  var versionKey__default = /* @__PURE__ */ _interopDefaultLegacy(versionKey);
+  var deployTarget__default = /* @__PURE__ */ _interopDefaultLegacy(deployTarget);
+  var lang__default = /* @__PURE__ */ _interopDefaultLegacy(lang);
+  var siteId__default = /* @__PURE__ */ _interopDefaultLegacy(siteId);
+  const CORE_UPLOAD_THRESHOLD = 5e4;
+  const MAX_IDLE_WAIT_MSECS = 3e3;
+  const MIN_ROOT_ACTIVITY_DURATION_MSECS = 300;
+  const INSTR_APP_NAME = "lwr_experience";
+  const VERSION = "246";
+  const CONFIG_URL = `/${_1_66_439246_0.WEBRUNTIME_PREFIX}/o11y/${VERSION}/config`;
+  const TOKEN_URL = `/${_1_66_439246_0.WEBRUNTIME_PREFIX}/o11y/${VERSION}/token`;
+  const INVALID_API_ENDPOINT = "O11Y_ENDPOINT_NOT_CONFIGURED";
+  const defaultServerConfig = {
+    coreEnabled: false,
+    coreSamplingRate: 0,
+    coreRelativeEndpoint: "",
+    falconEnabled: false,
+    falconSamplingRate: 0,
+    falconAbsoluteEndpoint: "",
+    traceSamplingRate: false ? 0 : 1,
+    isGuestApiEnabled: false
+  };
+  const randomPerApp = Math.random();
+  const clientConfig = Object.assign({}, defaultServerConfig, {
+    token: ""
+  });
+  const isProduction = false;
+  if (isProduction) {
+    _1.utility.markProduction();
+  }
+  let disallowCoreAccess = true;
+  async function initConfig(transportFetch2) {
+    const userModule = await _0_10_10.load("@app/user/v/1");
+    const user = userModule.default;
+    const isGuest = user.isGuest;
+    const init = {
+      headers: {
+        Accept: "text/plain",
+        "Content-Type": null
+      },
+      basePath: basePath__default["default"],
+      isNonApiRequest: true,
+      o11y: {
+        skipInstr: true
+      }
+    };
+    function getPath(url) {
+      return isGuest ? `${url}?asGuest=true` : url;
+    }
+    const srvConfigJson = await transportFetch2(getPath(CONFIG_URL), init).then((resp) => resp.text());
+    new _1.PublicSafety().tryCatch(() => {
+      const srvConfig = JSON.parse(srvConfigJson);
+      Object.keys(clientConfig).forEach((key) => {
+        const value = srvConfig[key];
+        const expectedType = typeof clientConfig[key];
+        if (expectedType === "string" && value === "" || _1.utility.requireArgumentIfDefined(value, `srvConfig.${key}`, expectedType)) {
+          clientConfig[key] = srvConfig[key];
+        }
+      });
+    });
+    disallowCoreAccess = usesConnectApi() && !clientConfig.isGuestApiEnabled && isGuest;
+    if (shouldUploadToFalcon()) {
+      clientConfig.token = await transportFetch2(getPath(TOKEN_URL), init).then((resp) => resp.text());
+    }
+  }
+  function getRawConfig() {
+    return clientConfig;
+  }
+  function canUploadToEndpoint(enabled, apiEndpoint) {
+    return enabled && apiEndpoint !== "" && apiEndpoint !== INVALID_API_ENDPOINT;
+  }
+  function willSampleLog(sampleRate) {
+    return !isProduction || sampleRate > 0 && sampleRate >= randomPerApp;
+  }
+  function shouldUploadToCore() {
+    return !disallowCoreAccess && canUploadToEndpoint(clientConfig.coreEnabled, clientConfig.coreRelativeEndpoint) && willSampleLog(clientConfig.coreSamplingRate);
+  }
+  function shouldUploadToFalcon() {
+    return canUploadToEndpoint(clientConfig.falconEnabled, clientConfig.falconAbsoluteEndpoint) && willSampleLog(clientConfig.falconSamplingRate);
+  }
+  function usesConnectApi() {
+    const index = clientConfig.coreRelativeEndpoint?.indexOf("services/data/");
+    return index === 0 || index === 1;
+  }
+  function useApiBasePath() {
+    const ep = clientConfig.coreRelativeEndpoint || "";
+    return usesConnectApi() && ep.length > 1 && ep[0] !== "/";
+  }
+  function sampleRootActivity() {
+    const randomPerInvocation = Math.random();
+    const rate = clientConfig.traceSamplingRate || 0;
+    return rate > 0 && rate >= randomPerInvocation;
+  }
+  const actOptionsStartAtZero = {
+    perfStartOverride: 0
+  };
+  let debugMsg;
+  class O11yRoutingSupport {
+    constructor(o11yApp) {
+      this._rootPayload = {
+        sequence: 0,
+        navCount: 0,
+        clickCount: 0,
+        isManual: false,
+        bootstrap: void 0
+      };
+      this._navPayload = {
+        isIdleHit: false,
+        isManual: false
+      };
+      this._hadRootActivity = false;
+      this._hadNavActivity = false;
+      this._isFirstNavActivity = true;
+      const debugMode = true;
+      debugMsg = (msg) => debugMode && console.log(`O11YR ${msg}`);
+      debugMsg("Started");
+      this._o11yApp = o11yApp;
+      document.body.addEventListener("click", this._handleClick.bind(this), {
+        capture: true,
+        passive: true
+      });
+      window.addEventListener("visibilitychange", this._handleVisibilityChange.bind(this));
+    }
+    _handleClick() {
+      if (!this._rootActivity && this._hadFirstRootActivity) {
+        this._startRoot();
+      } else {
+        this._rootPayload.clickCount += 1;
+      }
+    }
+    _handleVisibilityChange() {
+      const isHide = document.visibilityState === "hidden";
+      debugMsg(isHide ? "Hide" : "Show");
+      if (isHide) {
+        this._stopNavTransition();
+        this._stopNav();
+        this._stopRoot(false);
+      } else {
+        if (this._hadRootActivity) {
+          this._startRoot(true);
+        }
+        if (this._hadNavActivity && !this._navActivity) {
+          this._startNav(this._navData, true);
+        }
+      }
+    }
+    get _isFirstRootActivity() {
+      return this._rootPayload.sequence === 1;
+    }
+    get _hadFirstRootActivity() {
+      return this._rootPayload.sequence > 0;
+    }
+    _startRoot(isManual = false) {
+      if (this._rootActivity) {
+        this._stopRoot(false);
+      }
+      if (this._hadFirstRootActivity) {
+        this._rootPayload.clickCount = 0;
+        this._rootPayload.navCount = 0;
+      }
+      this._rootPayload.sequence += 1;
+      this._rootPayload.isManual = isManual;
+      this._rootActivity = this._o11yApp.startRootActivity("root", void 0, sampleRootActivity());
+      this._hadRootActivity = true;
+      debugMsg(`Root Started ${this._rootActivity.getId()}`);
+      _1$1.idleDetector.requestIdleDetectedCallback(() => {
+        this._stopRoot(true);
+      });
+    }
+    _stopRoot(idleStop) {
+      if (!this._rootActivity) {
+        return;
+      }
+      debugMsg(`Root Stop ${idleStop ? "idle" : "busy"} ${this._rootActivity.getId()}`);
+      try {
+        if (!this._isFirstRootActivity && this._rootPayload.navCount === 0 && _1$1.time().perfNow - this._rootActivity.getStartPerfTime() < MIN_ROOT_ACTIVITY_DURATION_MSECS) {
+          this._rootActivity.discard();
+          this._rootPayload.sequence -= 1;
+          return;
+        }
+        if (this._isFirstRootActivity) {
+          this._rootPayload.bootstrap = this._getBootstrap();
+        }
+        const options = this._isFirstRootActivity ? actOptionsStartAtZero : void 0;
+        if (idleStop) {
+          this._rootActivity.stop(_246_26_1.rootSchema, this._rootPayload, options);
+        } else {
+          this._rootActivity.terminate(_246_26_1.rootSchema, this._rootPayload, options);
+        }
+      } finally {
+        this._rootActivity = void 0;
+        this._hadRootActivity = false;
+      }
+    }
+    _startNav(data, isManual) {
+      this._stopNav();
+      this._navPayload.isIdleHit = false;
+      this._navPayload.isManual = isManual;
+      this._rootPayload.navCount += 1;
+      this._navData = data ? {
+        url: data.url,
+        pageRef: data.pageRef,
+        isSsr: data.isSsr
+      } : void 0;
+      this._navActivity = this._o11yApp.startActivity("navigation");
+      this._hadNavActivity = true;
+      debugMsg(`Nav Started ${this._navActivity.getId()}`);
+      _1$1.idleDetector.requestIdleDetectedCallback(() => {
+        debugMsg(`Nav Idle ${this._navActivity?.getId()}`);
+        this._navPayload.isIdleHit = true;
+      });
+    }
+    _stopNav() {
+      if (this._navActivity) {
+        debugMsg(`Nav Stop ${this._navActivity.getId()}`);
+        try {
+          const options = this._isFirstNavActivity ? actOptionsStartAtZero : void 0;
+          this._isFirstNavActivity = false;
+          this._navActivity.stop(_246_26_1.navSchema, this._navPayload, options);
+        } finally {
+          this._navActivity = void 0;
+        }
+      }
+    }
+    _startNavTransition(data) {
+      if (this._navTransitionActivity) {
+        this._stopNavTransition(void 0, true);
+      }
+      this._navTransitionData = data;
+      this._navTransitionActivity = this._o11yApp.startActivity("navigation transition");
+      debugMsg(`Trans Started ${this._navTransitionActivity.getId()}`);
+    }
+    _stopNavTransition(errorData, shouldTerminate = false) {
+      if (this._navTransitionActivity) {
+        debugMsg(`Trans ${shouldTerminate ? "Terminate" : "Stop"} ${this._navTransitionActivity.getId()}`);
+        try {
+          if (errorData) {
+            const {
+              code,
+              message,
+              level
+            } = errorData;
+            const levelText = ["Fatal", "Error", "Warning", "Log"][level];
+            this._navTransitionActivity.error(message, _246_26_1.navTransitionSchema, {
+              code: code?.toString(),
+              level: levelText
+            });
+          }
+          const payload = this._navTransitionData ? {
+            nextUrl: this._navTransitionData.url,
+            type: this._navTransitionData.pageRef?.type,
+            isSsr: this._navTransitionData.isSsr
+          } : void 0;
+          if (shouldTerminate) {
+            this._navTransitionActivity.terminate(_246_26_1.navTransitionSchema, payload);
+          } else {
+            this._navTransitionActivity.stop(_246_26_1.navTransitionSchema, payload);
+          }
+        } finally {
+          this._navTransitionActivity = void 0;
+          this._navTransitionData = void 0;
+        }
+      }
+    }
+    _getBootstrap() {
+      if (typeof window.performance?.getEntriesByName !== "function") {
+        return 0;
+      }
+      const appBootstrap = window.performance.getEntriesByName(`${_1_66_439246_0.WEBRUNTIME_PREFIX}-app-bootstrap`);
+      return appBootstrap[0]?.duration || 0;
+    }
+    preNavigate(data) {
+      this._startNavTransition({
+        url: data.next.url,
+        pageRef: data.next.route.pageReference,
+        isSsr: data.next.routeDefinition?.bootstrap?.ssr
+      });
+    }
+    postNavigate(data) {
+      this._stopNavTransition();
+      this._startNav({
+        url: data.url,
+        pageRef: data.route.pageReference,
+        isSsr: data.routeDefinition?.bootstrap?.ssr
+      }, false);
+    }
+    errorNavigate(data) {
+      debugMsg(`Err level ${data?.level}: ${data?.code}`);
+      this._stopNavTransition(data);
+    }
+    getCurrentPageData() {
+      if (this._navData) {
+        const {
+          pageRef,
+          url,
+          isSsr
+        } = this._navData;
+        return {
+          url,
+          type: pageRef?.type,
+          isSsr
+        };
+      }
+      return void 0;
+    }
+    startFirstRootActivity() {
+      if (!this._hadFirstRootActivity) {
+        this._startRoot();
+      }
+    }
+  }
+  class O11yAppPayloadProvider {
+    constructor() {
+      this._totalVisibleDuration = 0;
+      this._isVisible = document?.visibilityState === "visible";
+      if (this._isVisible) {
+        this._lastVisibleTime = 0;
+      }
+      window?.addEventListener("visibilitychange", this._handleVisibilityChange.bind(this));
+    }
+    _handleVisibilityChange() {
+      if (document.visibilityState === "hidden") {
+        this._isVisible = false;
+        if (this._lastVisibleTime !== void 0) {
+          const perfNow = _1$1.time().perfNow;
+          this._totalVisibleDuration += perfNow - this._lastVisibleTime;
+          this._lastVisibleTime = perfNow;
+        }
+      } else {
+        this._isVisible = true;
+        this._lastVisibleTime = _1$1.time().perfNow;
+      }
+    }
+    getPayload() {
+      const _durationSinceLastRecorded = this._isVisible && this._lastVisibleTime !== void 0 ? _1$1.time().perfNow - this._lastVisibleTime : 0;
+      const payload = {
+        isDesign: isDesignMode__default["default"],
+        isMobile: isMobileAppMode__default["default"],
+        isPreview: isPreviewMode__default["default"],
+        lang: lang__default["default"],
+        siteId: siteId__default["default"],
+        vKey: versionKey__default["default"],
+        visd: this._totalVisibleDuration + _durationSinceLastRecorded,
+        deployTarget: deployTarget__default["default"]
+      };
+      return {
+        schema: _246_26_1.appPayloadSchema,
+        payload
+      };
+    }
+  }
+  class O11yPagePayloadProvider {
+    linkWithRouterSupport(routerSupport) {
+      this._routingSupport = routerSupport;
+    }
+    getPayload() {
+      if (this._routingSupport) {
+        const payload = this._routingSupport.getCurrentPageData();
+        if (payload)
+          return {
+            schema: _246_26_1.pagePayloadSchema,
+            payload
+          };
+      }
+      return void 0;
+    }
+  }
+  let simpleCollector;
+  let protoEncoderFunc;
+  const _o11y = webruntimeO11y__namespace._o11y;
+  _o11y.clientVersion = _1$1._version;
+  _o11y.schemaVersion = _246_26_1$1.version;
+  const versionLabel = `${_1$1._version}:${_246_26_1$1.version}`;
+  const transportFetch = transport__namespace.fetch;
+  async function hookO11ySetup(serviceApi) {
+    const isProduction2 = false;
+    try {
+      if (typeof window === "undefined") {
+        _o11y.isUnavailable = true;
+        return;
+      }
+      const moduleFetchTasker = _1$1.idleDetector.declareNotifierTaskMulti("o11y LWR module fetch");
+      const appPayloadProvider = new O11yAppPayloadProvider();
+      const pagePayloadProvider = new O11yPagePayloadProvider();
+      _o11y.app = _1$1.registerInstrumentedApp(INSTR_APP_NAME, {
+        isProduction: isProduction2,
+        enableBuffering: true,
+        appPayloadProvider,
+        pagePayloadProvider
+      });
+      dispatcher__default["default"]?.((info) => {
+        if (info.id === "lwr.loader.module.fetch") {
+          if (info.phase === 0) {
+            moduleFetchTasker.add();
+          } else {
+            moduleFetchTasker.done();
+          }
+        } else if (info.id === "lwr.loader.module.error") {
+          moduleFetchTasker.done();
+        }
+      });
+      _o11y.app.networkInstrumentation({
+        tracingHeadersOptions: {
+          useB3Headers: true
+        }
+      });
+      _246_5_0.webVitals.activate();
+      _o11y.routingSupport = new O11yRoutingSupport(_o11y.app);
+      pagePayloadProvider.linkWithRouterSupport(_o11y.routingSupport);
+      if (!isProduction2) {
+        _o11y.routingSupport.startFirstRootActivity();
+      }
+      let isConsoleInitialized = false;
+      _o11y.initConsole = (options) => {
+        if (!isConsoleInitialized && _o11y.app) {
+          const consoleCollector = new _1$1.ConsoleCollector();
+          _o11y.app.registerLogCollector(consoleCollector, options);
+          isConsoleInitialized = true;
+        }
+      };
+      if (!isProduction2) {
+        _o11y.initConsole();
+        _o11y.app.log(`o11y ${versionLabel}`);
+      }
+      _o11y.upload = uploadAsNeededAsync;
+      await initConfig(transportFetch);
+      if (isProduction2) {
+        _o11y.routingSupport.startFirstRootActivity();
+      }
+      await waitForLoad();
+      _o11y.willUpload = shouldUploadToCore() || shouldUploadToFalcon();
+      if (_o11y.willUpload) {
+        await initSimpleCollector(_o11y.app, {
+          appName: serviceApi.appMetadata.bootstrapModule,
+          sdkVersion: `o11y ${versionLabel}`
+        });
+        addEventListenersForUpload();
+        await uploadAsNeededAsync(true);
+      }
+    } catch (err) {
+      if (!isProduction2) {
+        throw err;
+      }
+      try {
+        console?.error("Failed to start o11y", err);
+      } catch {
+      }
+    } finally {
+      try {
+        _o11y.app?.disableBuffering();
+      } catch {
+      }
+    }
+  }
+  function addEventListenersForUpload() {
+    window.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") {
+        uploadAsNeededAsync(true);
+      }
+    });
+  }
+  async function waitForLoad() {
+    const waitForIdleWithTimeout = (resolve) => {
+      let resolved = false;
+      setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          resolve();
+        }
+      }, MAX_IDLE_WAIT_MSECS);
+      _1$1.idleDetector.requestIdleDetectedCallback(() => {
+        if (!resolved) {
+          resolved = true;
+          resolve();
+        }
+      });
+    };
+    return new Promise((resolve) => {
+      if (document.readyState === "complete") {
+        waitForIdleWithTimeout(resolve);
+      } else {
+        window.addEventListener("load", () => waitForIdleWithTimeout(resolve));
+      }
+    });
+  }
+  async function initSimpleCollector(o11yApp, environment) {
+    const [simpleCollectorModule, collectorsModule] = await Promise.all([_0_10_10.load("o11y/simple_collector/v/246_5_0"), _0_10_10.load("o11y/collectors/v/246_5_0")]);
+    protoEncoderFunc = (collectorsModule.default || collectorsModule).encodeCoreEnvelopeContentsRaw;
+    simpleCollector = new (simpleCollectorModule.default || simpleCollectorModule).SimpleCollector({
+      environment
+    });
+    o11yApp.registerLogCollector(simpleCollector, {
+      retroactive: true
+    });
+    o11yApp.registerMetricsCollector(simpleCollector);
+  }
+  function uploadAsNeededAsync(ignoreThreshold = false) {
+    const promises = [];
+    const doCore = shouldUploadToCore();
+    const doFalcon = shouldUploadToFalcon();
+    if (simpleCollector?.hasData && (doCore || doFalcon) && (ignoreThreshold || simpleCollector.estimatedByteSize >= CORE_UPLOAD_THRESHOLD)) {
+      const rawContents = simpleCollector.getRawContentsOfCoreEnvelope();
+      const binary = protoEncoderFunc(rawContents);
+      if (doCore) {
+        promises.push(uploadToCoreAsync(binary));
+      }
+      if (doFalcon) {
+        promises.push(uploadToFalconAsync(binary));
+      }
+    }
+    return Promise.allSettled(promises);
+  }
+  function uploadToCoreAsync(binary) {
+    const fromCharCode = String.fromCharCode;
+    const output = [];
+    for (let i = 0, length = binary.length; i < length; i++) {
+      output.push(fromCharCode(binary[i]));
+    }
+    const b64 = window.btoa(output.join(""));
+    const options = {
+      method: "POST",
+      body: JSON.stringify({
+        base64Env: b64
+      }),
+      keepalive: true,
+      isNonApiRequest: !usesConnectApi(),
+      o11y: {
+        skipInstr: true
+      }
+    };
+    let path = getRawConfig().coreRelativeEndpoint;
+    if (useApiBasePath()) {
+      if (path[0] !== "/") {
+        path = `/${path}`;
+      }
+    } else {
+      options.basePath = basePath__default["default"];
+    }
+    return transportFetch(path, options);
+  }
+  function uploadToFalconAsync(binary) {
+    const config = getRawConfig();
+    const reqInit = {
+      method: "POST",
+      body: binary,
+      headers: {
+        "x-sfdc-o11y-token": config.token || "",
+        "Content-Type": "application/octet-stream"
+      },
+      keepalive: true,
+      o11y: {
+        skipInstr: true
+      }
+    };
+    return fetch(config.falconAbsoluteEndpoint, reqInit);
+  }
+  exports["default"] = hookO11ySetup;
+  Object.defineProperty(exports, "__esModule", {value: true});
+});
+LWR.define("webruntime/o11yHook", ["exports", "webruntime/o11yHook/v/1_66_439-246_0"], function(e, m) {
+  e.default = m && typeof m == "object" && "default" in m ? m.default : m;
+  Object.keys(m).forEach(function(n) {
+    n === "default" || e.hasOwnProperty(n) || Object.defineProperty(e, n, {enumerable: true, get: function() {
+      return m[n];
+    }});
+  });
+});
+LWR.define("webruntime/hook/v/1_66_439-246_0", ["exports"], function(exports) {
+  "use strict";
+  var inlinedModules = ["@app/apexApiBasePath", "@app/apiBasePath", "@app/authenticationCookieName", "@app/basePath", "@app/guestUuidCookieName", "@app/isDesignMode", "@app/isPreviewMode", "@app/isMobileAppMode", "@app/deployTarget", "@app/loginPath", "@app/routes", "@app/extraRouteParams", "@app/uiBasePath", "@app/versionKey", "@app/viewToThemeLayoutMap", "@app/views", "@salesforce/community/basePath", "@salesforce/i18n/lang", "@salesforce/site/Id", "@salesforce/webstore/Id", "webruntime/dispatcher"];
+  const VERSION_NOT_PROVIDED_SUFFIX = "/v/version-not-provided";
+  const designBundled = ["webruntimedesign/componentWrapper", "webruntimedesign/regionWrapper", "webruntimedesign/dropRegion", "webruntimedesign/componentService", "webruntimedesign/designComponent"];
+  const frameworkInlinedModules = ["o11y/simple_collector", "o11y/collectors", "mobileruntime/hybridAppManager"];
+  function communitiesHook(serviceAPI) {
+    serviceAPI.addLoaderPlugin({
+      resolveModule: async (id) => {
+        const [specifier] = id.split("/v/");
+        if (id.endsWith(VERSION_NOT_PROVIDED_SUFFIX)) {
+          return specifier;
+        }
+        if (frameworkInlinedModules.includes(specifier)) {
+          return specifier;
+        }
+        if (specifier && (designBundled.includes(specifier) || inlinedModules.includes(specifier))) {
+          return specifier;
+        }
+        if (specifier === "@salesforce/loader") {
+          return "lwr/loaderLegacy/v/0_10_10";
+        }
+        return null;
+      }
+    });
+  }
+  exports["default"] = communitiesHook;
+  Object.defineProperty(exports, "__esModule", {value: true});
+});
+LWR.define("webruntime/hook", ["exports", "webruntime/hook/v/1_66_439-246_0"], function(e, m) {
+  e.default = m && typeof m == "object" && "default" in m ? m.default : m;
+  Object.keys(m).forEach(function(n) {
+    n === "default" || e.hasOwnProperty(n) || Object.defineProperty(e, n, {enumerable: true, get: function() {
+      return m[n];
+    }});
+  });
+});
+LWR.define("@lwc/synthetic-shadow/v/3_0_4", function() {
+  "use strict";
+  function invariant(value, msg) {
+    if (!value) {
+      throw new Error(`Invariant Violation: ${msg}`);
+    }
+  }
+  function isTrue$1(value, msg) {
+    if (!value) {
+      throw new Error(`Assert Violation: ${msg}`);
+    }
+  }
+  function isFalse$1(value, msg) {
+    if (value) {
+      throw new Error(`Assert Violation: ${msg}`);
+    }
+  }
+  function fail(msg) {
+    throw new Error(msg);
+  }
+  var assert = /* @__PURE__ */ Object.freeze({
+    __proto__: null,
+    fail,
+    invariant,
+    isFalse: isFalse$1,
+    isTrue: isTrue$1
+  });
+  const {
+    assign,
+    create,
+    defineProperties,
+    defineProperty,
+    freeze,
+    getOwnPropertyDescriptor,
+    getOwnPropertyNames,
+    getPrototypeOf,
+    hasOwnProperty,
+    isFrozen,
+    keys,
+    seal,
+    setPrototypeOf
+  } = Object;
+  const {
+    isArray
+  } = Array;
+  const {
+    concat: ArrayConcat,
+    copyWithin: ArrayCopyWithin,
+    every: ArrayEvery,
+    fill: ArrayFill,
+    filter: ArrayFilter,
+    find: ArrayFind,
+    findIndex: ArrayFindIndex,
+    includes: ArrayIncludes,
+    indexOf: ArrayIndexOf,
+    join: ArrayJoin,
+    map: ArrayMap,
+    pop: ArrayPop,
+    push: ArrayPush,
+    reduce: ArrayReduce,
+    reverse: ArrayReverse,
+    shift: ArrayShift,
+    slice: ArraySlice,
+    some: ArraySome,
+    sort: ArraySort,
+    splice: ArraySplice,
+    unshift: ArrayUnshift,
+    forEach
+  } = Array.prototype;
+  const {
+    charCodeAt: StringCharCodeAt,
+    replace: StringReplace,
+    split: StringSplit,
+    slice: StringSlice,
+    toLowerCase: StringToLowerCase
+  } = String.prototype;
+  function isUndefined(obj) {
+    return obj === void 0;
+  }
+  function isNull(obj) {
+    return obj === null;
+  }
+  function isTrue(obj) {
+    return obj === true;
+  }
+  function isFalse(obj) {
+    return obj === false;
+  }
+  function isFunction(obj) {
+    return typeof obj === "function";
+  }
+  function isObject(obj) {
+    return typeof obj === "object";
+  }
+  const OtS = {}.toString;
+  function toString(obj) {
+    if (obj && obj.toString) {
+      if (isArray(obj)) {
+        return ArrayJoin.call(ArrayMap.call(obj, toString), ",");
+      }
+      return obj.toString();
+    } else if (typeof obj === "object") {
+      return OtS.call(obj);
+    } else {
+      return obj + "";
+    }
+  }
+  const _globalThis = typeof globalThis === "object" ? globalThis : window;
+  const KEY__IS_NATIVE_SHADOW_ROOT_DEFINED = "$isNativeShadowRootDefined$";
+  const KEY__SHADOW_RESOLVER = "$shadowResolver$";
+  const KEY__SHADOW_RESOLVER_PRIVATE = "$$ShadowResolverKey$$";
+  const KEY__SHADOW_STATIC = "$shadowStaticNode$";
+  const KEY__SHADOW_STATIC_PRIVATE = "$shadowStaticNodeKey$";
+  const KEY__SHADOW_TOKEN = "$shadowToken$";
+  const KEY__SHADOW_TOKEN_PRIVATE = "$$ShadowTokenKey$$";
+  const KEY__LEGACY_SHADOW_TOKEN = "$legacyShadowToken$";
+  const KEY__LEGACY_SHADOW_TOKEN_PRIVATE = "$$LegacyShadowTokenKey$$";
+  const KEY__SYNTHETIC_MODE = "$$lwc-synthetic-mode";
+  const KEY__NATIVE_GET_ELEMENT_BY_ID = "$nativeGetElementById$";
+  const KEY__NATIVE_QUERY_SELECTOR_ALL = "$nativeQuerySelectorAll$";
+  if (!_globalThis.lwcRuntimeFlags) {
+    Object.defineProperty(_globalThis, "lwcRuntimeFlags", {
+      value: create(null)
+    });
+  }
+  const _Node = Node;
+  const nodePrototype = _Node.prototype;
+  const {
+    DOCUMENT_POSITION_CONTAINED_BY,
+    DOCUMENT_POSITION_CONTAINS,
+    DOCUMENT_POSITION_PRECEDING,
+    DOCUMENT_POSITION_FOLLOWING,
+    ELEMENT_NODE,
+    TEXT_NODE,
+    CDATA_SECTION_NODE,
+    PROCESSING_INSTRUCTION_NODE,
+    COMMENT_NODE,
+    DOCUMENT_FRAGMENT_NODE
+  } = _Node;
+  const {
+    appendChild,
+    cloneNode,
+    compareDocumentPosition,
+    insertBefore,
+    removeChild,
+    replaceChild,
+    hasChildNodes
+  } = nodePrototype;
+  const {
+    contains
+  } = HTMLElement.prototype;
+  const firstChildGetter = getOwnPropertyDescriptor(nodePrototype, "firstChild").get;
+  const lastChildGetter = getOwnPropertyDescriptor(nodePrototype, "lastChild").get;
+  const textContentGetter = getOwnPropertyDescriptor(nodePrototype, "textContent").get;
+  const parentNodeGetter = getOwnPropertyDescriptor(nodePrototype, "parentNode").get;
+  const ownerDocumentGetter = getOwnPropertyDescriptor(nodePrototype, "ownerDocument").get;
+  const parentElementGetter = getOwnPropertyDescriptor(nodePrototype, "parentElement").get;
+  const textContextSetter = getOwnPropertyDescriptor(nodePrototype, "textContent").set;
+  const childNodesGetter = getOwnPropertyDescriptor(nodePrototype, "childNodes").get;
+  const isConnected = hasOwnProperty.call(nodePrototype, "isConnected") ? getOwnPropertyDescriptor(nodePrototype, "isConnected").get : function() {
+    const doc = ownerDocumentGetter.call(this);
+    return doc === null || (compareDocumentPosition.call(doc, this) & DOCUMENT_POSITION_CONTAINED_BY) !== 0;
+  };
+  const {
+    getAttribute,
+    getBoundingClientRect,
+    getElementsByTagName: getElementsByTagName$1,
+    getElementsByTagNameNS: getElementsByTagNameNS$1,
+    hasAttribute,
+    querySelector,
+    querySelectorAll: querySelectorAll$1,
+    removeAttribute,
+    setAttribute
+  } = Element.prototype;
+  const attachShadow$1 = hasOwnProperty.call(Element.prototype, "attachShadow") ? Element.prototype.attachShadow : () => {
+    throw new TypeError("attachShadow() is not supported in current browser. Load the @lwc/synthetic-shadow polyfill and use Lightning Web Components");
+  };
+  const childElementCountGetter = getOwnPropertyDescriptor(Element.prototype, "childElementCount").get;
+  const firstElementChildGetter = getOwnPropertyDescriptor(Element.prototype, "firstElementChild").get;
+  const lastElementChildGetter = getOwnPropertyDescriptor(Element.prototype, "lastElementChild").get;
+  const innerTextDescriptor = getOwnPropertyDescriptor(HTMLElement.prototype, "innerText");
+  const innerTextGetter = innerTextDescriptor ? innerTextDescriptor.get : null;
+  const innerTextSetter = innerTextDescriptor ? innerTextDescriptor.set : null;
+  const outerTextDescriptor = getOwnPropertyDescriptor(HTMLElement.prototype, "outerText");
+  const outerTextGetter = outerTextDescriptor ? outerTextDescriptor.get : null;
+  const outerTextSetter = outerTextDescriptor ? outerTextDescriptor.set : null;
+  const innerHTMLDescriptor = getOwnPropertyDescriptor(Element.prototype, "innerHTML");
+  const innerHTMLGetter = innerHTMLDescriptor.get;
+  const innerHTMLSetter = innerHTMLDescriptor.set;
+  const outerHTMLDescriptor = getOwnPropertyDescriptor(Element.prototype, "outerHTML");
+  const outerHTMLGetter = outerHTMLDescriptor.get;
+  const outerHTMLSetter = outerHTMLDescriptor.set;
+  const tagNameGetter = getOwnPropertyDescriptor(Element.prototype, "tagName").get;
+  const tabIndexDescriptor = getOwnPropertyDescriptor(HTMLElement.prototype, "tabIndex");
+  const tabIndexGetter = tabIndexDescriptor.get;
+  const tabIndexSetter = tabIndexDescriptor.set;
+  const matches = Element.prototype.matches;
+  const childrenGetter = getOwnPropertyDescriptor(Element.prototype, "children").get;
+  const {
+    getElementsByClassName: getElementsByClassName$1
+  } = HTMLElement.prototype;
+  const shadowRootGetter = hasOwnProperty.call(Element.prototype, "shadowRoot") ? getOwnPropertyDescriptor(Element.prototype, "shadowRoot").get : () => null;
+  const assignedSlotGetter$1 = hasOwnProperty.call(Element.prototype, "assignedSlot") ? getOwnPropertyDescriptor(Element.prototype, "assignedSlot").get : () => null;
+  let assignedNodes, assignedElements;
+  if (typeof HTMLSlotElement !== "undefined") {
+    assignedNodes = HTMLSlotElement.prototype.assignedNodes;
+    assignedElements = HTMLSlotElement.prototype.assignedElements;
+  } else {
+    assignedNodes = () => {
+      throw new TypeError("assignedNodes() is not supported in current browser. Load the @lwc/synthetic-shadow polyfill to start using <slot> elements in your Lightning Web Component's template");
+    };
+    assignedElements = () => {
+      throw new TypeError("assignedElements() is not supported in current browser. Load the @lwc/synthetic-shadow polyfill to start using <slot> elements in your Lightning Web Component's template");
+    };
+  }
+  const eventTargetGetter = getOwnPropertyDescriptor(Event.prototype, "target").get;
+  const eventCurrentTargetGetter = getOwnPropertyDescriptor(Event.prototype, "currentTarget").get;
+  const focusEventRelatedTargetGetter = getOwnPropertyDescriptor(FocusEvent.prototype, "relatedTarget").get;
+  const composedPath = hasOwnProperty.call(Event.prototype, "composedPath") ? Event.prototype.composedPath : () => [];
+  const DocumentPrototypeActiveElement = getOwnPropertyDescriptor(Document.prototype, "activeElement").get;
+  const elementFromPoint = Document.prototype.elementFromPoint;
+  const elementsFromPoint = Document.prototype.elementsFromPoint;
+  const defaultViewGetter = getOwnPropertyDescriptor(Document.prototype, "defaultView").get;
+  const {
+    querySelectorAll,
+    getElementById,
+    getElementsByClassName,
+    getElementsByTagName,
+    getElementsByTagNameNS
+  } = Document.prototype;
+  const {
+    getElementsByName
+  } = HTMLDocument.prototype;
+  const {
+    addEventListener: windowAddEventListener,
+    removeEventListener: windowRemoveEventListener,
+    getComputedStyle: windowGetComputedStyle,
+    getSelection: windowGetSelection
+  } = window;
+  const MO = MutationObserver;
+  const MutationObserverObserve = MO.prototype.observe;
+  let NativeShadowRoot = null;
+  if (typeof ShadowRoot !== "undefined") {
+    NativeShadowRoot = ShadowRoot;
+  }
+  const isNativeShadowRootDefined = !isNull(NativeShadowRoot);
+  const isInstanceOfNativeShadowRoot = isNull(NativeShadowRoot) ? () => false : (node) => node instanceof NativeShadowRoot;
+  function detect$2() {
+    return typeof HTMLSlotElement === "undefined";
+  }
+  const {
+    createElement
+  } = Document.prototype;
+  const CHAR_S = 115;
+  const CHAR_L = 108;
+  const CHAR_O = 111;
+  const CHAR_T = 116;
+  function apply$2() {
+    class HTMLSlotElement2 {
+    }
+    setPrototypeOf(HTMLSlotElement2, HTMLElement.constructor);
+    setPrototypeOf(HTMLSlotElement2.prototype, HTMLElement.prototype);
+    Window.prototype.HTMLSlotElement = HTMLSlotElement2;
+    defineProperty(Document.prototype, "createElement", {
+      value: function(tagName, _options) {
+        const elm = createElement.apply(this, ArraySlice.call(arguments));
+        if (tagName.length === 4 && StringCharCodeAt.call(tagName, 0) === CHAR_S && StringCharCodeAt.call(tagName, 1) === CHAR_L && StringCharCodeAt.call(tagName, 2) === CHAR_O && StringCharCodeAt.call(tagName, 3) === CHAR_T) {
+          setPrototypeOf(elm, HTMLSlotElement2.prototype);
+        }
+        return elm;
+      }
+    });
+  }
+  if (detect$2()) {
+    apply$2();
+  }
+  function getOwnerDocument(node) {
+    const doc = ownerDocumentGetter.call(node);
+    return doc === null ? node : doc;
+  }
+  function getOwnerWindow(node) {
+    const doc = getOwnerDocument(node);
+    const win = defaultViewGetter.call(doc);
+    if (win === null) {
+      throw new TypeError();
+    }
+    return win;
+  }
+  let skipGlobalPatching;
+  function isGlobalPatchingSkipped(node) {
+    if (isUndefined(skipGlobalPatching)) {
+      const ownerDocument = getOwnerDocument(node);
+      skipGlobalPatching = ownerDocument.body && getAttribute.call(ownerDocument.body, "data-global-patching-bypass") === "temporary-bypass";
+    }
+    return isTrue(skipGlobalPatching);
+  }
+  function arrayFromCollection(collection) {
+    const size = collection.length;
+    const cloned = [];
+    if (size > 0) {
+      for (let i = 0; i < size; i++) {
+        cloned[i] = collection[i];
+      }
+    }
+    return cloned;
+  }
+  const eventTargetPrototype = typeof EventTarget !== "undefined" ? EventTarget.prototype : _Node.prototype;
+  const {
+    addEventListener: addEventListener2,
+    dispatchEvent,
+    removeEventListener: removeEventListener2
+  } = eventTargetPrototype;
+  const HostElementKey = "$$HostElementKey$$";
+  const ShadowedNodeKey = "$$ShadowedNodeKey$$";
+  function fastDefineProperty(node, propName, config) {
+    const shadowedNode = node;
+    if (true) {
+      defineProperty(shadowedNode, propName, config);
+    } else {
+      const {
+        value
+      } = config;
+      shadowedNode[propName] = value;
+    }
+  }
+  function setNodeOwnerKey(node, value) {
+    fastDefineProperty(node, HostElementKey, {
+      value,
+      configurable: true
+    });
+  }
+  function setNodeKey(node, value) {
+    fastDefineProperty(node, ShadowedNodeKey, {
+      value
+    });
+  }
+  function getNodeOwnerKey(node) {
+    return node[HostElementKey];
+  }
+  function getNodeNearestOwnerKey(node) {
+    let host = node;
+    let hostKey;
+    while (!isNull(host)) {
+      hostKey = getNodeOwnerKey(host);
+      if (!isUndefined(hostKey)) {
+        return hostKey;
+      }
+      host = parentNodeGetter.call(host);
+      if (!isNull(host) && isSyntheticSlotElement(host)) {
+        return void 0;
+      }
+    }
+  }
+  function getNodeKey(node) {
+    return node[ShadowedNodeKey];
+  }
+  function isNodeShadowed(node) {
+    return !isUndefined(getNodeOwnerKey(node));
+  }
+  function foldSlotElement(slot) {
+    let parent = parentElementGetter.call(slot);
+    while (!isNull(parent) && isSlotElement(parent)) {
+      slot = parent;
+      parent = parentElementGetter.call(slot);
+    }
+    return slot;
+  }
+  function isNodeSlotted(host, node) {
+    if (true) {
+      if (!(host instanceof HTMLElement)) {
+        console.error(`isNodeSlotted() should be called with a host as the first argument`);
+      }
+      if (!(node instanceof _Node)) {
+        console.error(`isNodeSlotted() should be called with a node as the second argument`);
+      }
+      if (!(compareDocumentPosition.call(node, host) & DOCUMENT_POSITION_CONTAINS)) {
+        console.error(`isNodeSlotted() should never be called with a node that is not a child node of the given host`);
+      }
+    }
+    const hostKey = getNodeKey(host);
+    let currentElement = node instanceof Element ? node : parentElementGetter.call(node);
+    while (!isNull(currentElement) && currentElement !== host) {
+      const elmOwnerKey = getNodeNearestOwnerKey(currentElement);
+      const parent = parentElementGetter.call(currentElement);
+      if (elmOwnerKey === hostKey) {
+        return isSlotElement(currentElement);
+      } else if (parent === host) {
+        return false;
+      } else if (!isNull(parent) && getNodeNearestOwnerKey(parent) !== elmOwnerKey) {
+        if (isSlotElement(parent)) {
+          currentElement = getNodeOwner(foldSlotElement(parent));
+          if (!isNull(currentElement)) {
+            if (currentElement === host) {
+              return true;
+            } else if (getNodeNearestOwnerKey(currentElement) === hostKey) {
+              return true;
+            }
+          }
+        } else {
+          return false;
+        }
+      } else {
+        currentElement = parent;
+      }
+    }
+    return false;
+  }
+  function getNodeOwner(node) {
+    if (!(node instanceof _Node)) {
+      return null;
+    }
+    const ownerKey = getNodeNearestOwnerKey(node);
+    if (isUndefined(ownerKey)) {
+      return null;
+    }
+    let nodeOwner = node;
+    while (!isNull(nodeOwner) && getNodeKey(nodeOwner) !== ownerKey) {
+      nodeOwner = parentNodeGetter.call(nodeOwner);
+    }
+    if (isNull(nodeOwner)) {
+      return null;
+    }
+    return nodeOwner;
+  }
+  function isSyntheticSlotElement(node) {
+    return isSlotElement(node) && isNodeShadowed(node);
+  }
+  function isSlotElement(node) {
+    return node instanceof HTMLSlotElement;
+  }
+  function isNodeOwnedBy(owner, node) {
+    if (true) {
+      if (!(owner instanceof HTMLElement)) {
+        console.error(`isNodeOwnedBy() should be called with an element as the first argument`);
+      }
+      if (!(node instanceof _Node)) {
+        console.error(`isNodeOwnedBy() should be called with a node as the second argument`);
+      }
+      if (!(compareDocumentPosition.call(node, owner) & DOCUMENT_POSITION_CONTAINS)) {
+        console.error(`isNodeOwnedBy() should never be called with a node that is not a child node of of the given owner`);
+      }
+    }
+    const ownerKey = getNodeNearestOwnerKey(node);
+    if (isUndefined(ownerKey)) {
+      const host = parentNodeGetter.call(node);
+      if (!isNull(host) && isSyntheticSlotElement(host)) {
+        return false;
+      }
+      return true;
+    }
+    return getNodeKey(owner) === ownerKey;
+  }
+  function shadowRootChildNodes(root) {
+    const elm = getHost(root);
+    return getAllMatches(elm, arrayFromCollection(childNodesGetter.call(elm)));
+  }
+  function getAllSlottedMatches(host, nodeList) {
+    const filteredAndPatched = [];
+    for (let i = 0, len = nodeList.length; i < len; i += 1) {
+      const node = nodeList[i];
+      if (!isNodeOwnedBy(host, node) && isNodeSlotted(host, node)) {
+        ArrayPush.call(filteredAndPatched, node);
+      }
+    }
+    return filteredAndPatched;
+  }
+  function getFirstSlottedMatch(host, nodeList) {
+    for (let i = 0, len = nodeList.length; i < len; i += 1) {
+      const node = nodeList[i];
+      if (!isNodeOwnedBy(host, node) && isNodeSlotted(host, node)) {
+        return node;
+      }
+    }
+    return null;
+  }
+  function getAllMatches(owner, nodeList) {
+    const filteredAndPatched = [];
+    for (let i = 0, len = nodeList.length; i < len; i += 1) {
+      const node = nodeList[i];
+      const isOwned = isNodeOwnedBy(owner, node);
+      if (isOwned) {
+        ArrayPush.call(filteredAndPatched, node);
+      }
+    }
+    return filteredAndPatched;
+  }
+  function getFirstMatch(owner, nodeList) {
+    for (let i = 0, len = nodeList.length; i < len; i += 1) {
+      if (isNodeOwnedBy(owner, nodeList[i])) {
+        return nodeList[i];
+      }
+    }
+    return null;
+  }
+  function shadowRootQuerySelector(root, selector) {
+    const elm = getHost(root);
+    const nodeList = arrayFromCollection(querySelectorAll$1.call(elm, selector));
+    return getFirstMatch(elm, nodeList);
+  }
+  function shadowRootQuerySelectorAll(root, selector) {
+    const elm = getHost(root);
+    const nodeList = querySelectorAll$1.call(elm, selector);
+    return getAllMatches(elm, arrayFromCollection(nodeList));
+  }
+  function getFilteredChildNodes(node) {
+    if (!isSyntheticShadowHost(node) && !isSlotElement(node)) {
+      const children = childNodesGetter.call(node);
+      return arrayFromCollection(children);
+    }
+    if (isSyntheticShadowHost(node)) {
+      const slots = arrayFromCollection(querySelectorAll$1.call(node, "slot"));
+      const resolver = getShadowRootResolver(getShadowRoot(node));
+      return ArrayReduce.call(slots, (seed, slot) => {
+        if (resolver === getShadowRootResolver(slot)) {
+          ArrayPush.apply(seed, getFilteredSlotAssignedNodes(slot));
+        }
+        return seed;
+      }, []);
+    } else {
+      const children = arrayFromCollection(childNodesGetter.call(node));
+      const resolver = getShadowRootResolver(node);
+      return ArrayFilter.call(children, (child) => resolver === getShadowRootResolver(child));
+    }
+  }
+  function getFilteredSlotAssignedNodes(slot) {
+    const owner = getNodeOwner(slot);
+    if (isNull(owner)) {
+      return [];
+    }
+    const childNodes = arrayFromCollection(childNodesGetter.call(slot));
+    return ArrayFilter.call(childNodes, (child) => !isNodeShadowed(child) || !isNodeOwnedBy(owner, child));
+  }
+  /**
+  @license
+  Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+  This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+  The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+  The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+  Code distributed by Google as part of the polymer project is also
+  subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+  */
+  function getInnerHTML(node) {
+    let s = "";
+    const childNodes = getFilteredChildNodes(node);
+    for (let i = 0, len = childNodes.length; i < len; i += 1) {
+      s += getOuterHTML(childNodes[i]);
+    }
+    return s;
+  }
+  /**
+  @license
+  Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+  This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+  The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+  The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+  Code distributed by Google as part of the polymer project is also
+  subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+  */
+  const escapeAttrRegExp = /[&\u00A0"]/g;
+  const escapeDataRegExp = /[&\u00A0<>]/g;
+  const {
+    replace,
+    toLowerCase
+  } = String.prototype;
+  function escapeReplace(c) {
+    switch (c) {
+      case "&":
+        return "&amp;";
+      case "<":
+        return "&lt;";
+      case ">":
+        return "&gt;";
+      case '"':
+        return "&quot;";
+      case "\xA0":
+        return "&nbsp;";
+      default:
+        return "";
+    }
+  }
+  function escapeAttr(s) {
+    return replace.call(s, escapeAttrRegExp, escapeReplace);
+  }
+  function escapeData(s) {
+    return replace.call(s, escapeDataRegExp, escapeReplace);
+  }
+  const voidElements = new Set(["AREA", "BASE", "BR", "COL", "COMMAND", "EMBED", "HR", "IMG", "INPUT", "KEYGEN", "LINK", "META", "PARAM", "SOURCE", "TRACK", "WBR"]);
+  const plaintextParents = new Set(["STYLE", "SCRIPT", "XMP", "IFRAME", "NOEMBED", "NOFRAMES", "PLAINTEXT", "NOSCRIPT"]);
+  function getOuterHTML(node) {
+    switch (node.nodeType) {
+      case ELEMENT_NODE: {
+        const {
+          attributes: attrs
+        } = node;
+        const tagName = tagNameGetter.call(node);
+        let s = "<" + toLowerCase.call(tagName);
+        for (let i = 0, attr; attr = attrs[i]; i++) {
+          s += " " + attr.name + '="' + escapeAttr(attr.value) + '"';
+        }
+        s += ">";
+        if (voidElements.has(tagName)) {
+          return s;
+        }
+        return s + getInnerHTML(node) + "</" + toLowerCase.call(tagName) + ">";
+      }
+      case TEXT_NODE: {
+        const {
+          data,
+          parentNode
+        } = node;
+        if (parentNode instanceof Element && plaintextParents.has(tagNameGetter.call(parentNode))) {
+          return data;
+        }
+        return escapeData(data);
+      }
+      case CDATA_SECTION_NODE: {
+        return `<!CDATA[[${node.data}]]>`;
+      }
+      case PROCESSING_INSTRUCTION_NODE: {
+        return `<?${node.target} ${node.data}?>`;
+      }
+      case COMMENT_NODE: {
+        return `<!--${node.data}-->`;
+      }
+      default: {
+        return "";
+      }
+    }
+  }
+  /**
+  @license
+  Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+  This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+  The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+  The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+  Code distributed by Google as part of the polymer project is also
+  subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+  */
+  function getTextContent(node) {
+    switch (node.nodeType) {
+      case ELEMENT_NODE: {
+        const childNodes = getFilteredChildNodes(node);
+        let content = "";
+        for (let i = 0, len = childNodes.length; i < len; i += 1) {
+          const currentNode = childNodes[i];
+          if (currentNode.nodeType !== COMMENT_NODE) {
+            content += getTextContent(currentNode);
+          }
+        }
+        return content;
+      }
+      default:
+        return node.nodeValue;
+    }
+  }
+  const Items$1 = new WeakMap();
+  function StaticNodeList() {
+    throw new TypeError("Illegal constructor");
+  }
+  StaticNodeList.prototype = create(NodeList.prototype, {
+    constructor: {
+      writable: true,
+      configurable: true,
+      value: StaticNodeList
+    },
+    item: {
+      writable: true,
+      enumerable: true,
+      configurable: true,
+      value(index) {
+        return this[index];
+      }
+    },
+    length: {
+      enumerable: true,
+      configurable: true,
+      get() {
+        return Items$1.get(this).length;
+      }
+    },
+    forEach: {
+      writable: true,
+      enumerable: true,
+      configurable: true,
+      value(cb, thisArg) {
+        forEach.call(Items$1.get(this), cb, thisArg);
+      }
+    },
+    entries: {
+      writable: true,
+      enumerable: true,
+      configurable: true,
+      value() {
+        return ArrayMap.call(Items$1.get(this), (v, i) => [i, v]);
+      }
+    },
+    keys: {
+      writable: true,
+      enumerable: true,
+      configurable: true,
+      value() {
+        return ArrayMap.call(Items$1.get(this), (_v, i) => i);
+      }
+    },
+    values: {
+      writable: true,
+      enumerable: true,
+      configurable: true,
+      value() {
+        return Items$1.get(this);
+      }
+    },
+    [Symbol.iterator]: {
+      writable: true,
+      configurable: true,
+      value() {
+        let nextIndex = 0;
+        return {
+          next: () => {
+            const items = Items$1.get(this);
+            return nextIndex < items.length ? {
+              value: items[nextIndex++],
+              done: false
+            } : {
+              done: true
+            };
+          }
+        };
+      }
+    },
+    [Symbol.toStringTag]: {
+      configurable: true,
+      get() {
+        return "NodeList";
+      }
+    },
+    toString: {
+      writable: true,
+      configurable: true,
+      value() {
+        return "[object NodeList]";
+      }
+    }
+  });
+  setPrototypeOf(StaticNodeList, NodeList);
+  function createStaticNodeList(items) {
+    const nodeList = create(StaticNodeList.prototype);
+    Items$1.set(nodeList, items);
+    forEach.call(items, (item, index) => {
+      defineProperty(nodeList, index, {
+        value: item,
+        enumerable: true,
+        configurable: true
+      });
+    });
+    return nodeList;
+  }
+  function getAllRootNodes(node) {
+    var _a;
+    const rootNodes = [];
+    let currentRootNode = node.getRootNode();
+    while (!isUndefined(currentRootNode)) {
+      rootNodes.push(currentRootNode);
+      currentRootNode = (_a = currentRootNode.host) === null || _a === void 0 ? void 0 : _a.getRootNode();
+    }
+    return rootNodes;
+  }
+  const findAncestorHostInImmediateShadowRoot = (rootNode, targetRootNode) => {
+    let host;
+    while (!isUndefined(host = rootNode.host)) {
+      const thisRootNode = host.getRootNode();
+      if (thisRootNode === targetRootNode) {
+        return host;
+      }
+      rootNode = thisRootNode;
+    }
+  };
+  function fauxElementsFromPoint(context, doc, left, top) {
+    const elements = elementsFromPoint.call(doc, left, top);
+    const result = [];
+    const rootNodes = getAllRootNodes(context);
+    if (!isNull(elements)) {
+      for (let i = 0; i < elements.length; i++) {
+        const element = elements[i];
+        if (isSyntheticSlotElement(element)) {
+          continue;
+        }
+        const elementRootNode = element.getRootNode();
+        if (ArrayIndexOf.call(rootNodes, elementRootNode) !== -1) {
+          ArrayPush.call(result, element);
+          continue;
+        }
+        const ancestorHost = findAncestorHostInImmediateShadowRoot(elementRootNode, rootNodes[0]);
+        if (!isUndefined(ancestorHost) && ArrayIndexOf.call(elements, ancestorHost) === -1 && ArrayIndexOf.call(result, ancestorHost) === -1) {
+          ArrayPush.call(result, ancestorHost);
+        }
+      }
+    }
+    return result;
+  }
+  const Items = new WeakMap();
+  function StaticHTMLCollection() {
+    throw new TypeError("Illegal constructor");
+  }
+  StaticHTMLCollection.prototype = create(HTMLCollection.prototype, {
+    constructor: {
+      writable: true,
+      configurable: true,
+      value: StaticHTMLCollection
+    },
+    item: {
+      writable: true,
+      enumerable: true,
+      configurable: true,
+      value(index) {
+        return this[index];
+      }
+    },
+    length: {
+      enumerable: true,
+      configurable: true,
+      get() {
+        return Items.get(this).length;
+      }
+    },
+    namedItem: {
+      writable: true,
+      enumerable: true,
+      configurable: true,
+      value(name) {
+        if (name === "") {
+          return null;
+        }
+        const items = Items.get(this);
+        for (let i = 0, len = items.length; i < len; i++) {
+          const item = items[len];
+          if (name === getAttribute.call(item, "id") || name === getAttribute.call(item, "name")) {
+            return item;
+          }
+        }
+        return null;
+      }
+    },
+    [Symbol.toStringTag]: {
+      configurable: true,
+      get() {
+        return "HTMLCollection";
+      }
+    },
+    toString: {
+      writable: true,
+      configurable: true,
+      value() {
+        return "[object HTMLCollection]";
+      }
+    }
+  });
+  setPrototypeOf(StaticHTMLCollection, HTMLCollection);
+  function createStaticHTMLCollection(items) {
+    const collection = create(StaticHTMLCollection.prototype);
+    Items.set(collection, items);
+    forEach.call(items, (item, index) => {
+      defineProperty(collection, index, {
+        value: item,
+        enumerable: true,
+        configurable: true
+      });
+    });
+    return collection;
+  }
+  function hasMountedChildren(node) {
+    return isSyntheticSlotElement(node) || isSyntheticShadowHost(node);
+  }
+  function getShadowParent(node, value) {
+    const owner = getNodeOwner(node);
+    if (value === owner) {
+      return getShadowRoot(owner);
+    } else if (value instanceof Element) {
+      if (getNodeNearestOwnerKey(node) === getNodeNearestOwnerKey(value)) {
+        return value;
+      } else if (!isNull(owner) && isSlotElement(value)) {
+        const slotOwner = getNodeOwner(value);
+        if (!isNull(slotOwner) && isNodeOwnedBy(owner, slotOwner)) {
+          return slotOwner;
+        }
+      }
+    }
+    return null;
+  }
+  function hasChildNodesPatched() {
+    return getInternalChildNodes(this).length > 0;
+  }
+  function firstChildGetterPatched() {
+    const childNodes = getInternalChildNodes(this);
+    return childNodes[0] || null;
+  }
+  function lastChildGetterPatched() {
+    const childNodes = getInternalChildNodes(this);
+    return childNodes[childNodes.length - 1] || null;
+  }
+  function textContentGetterPatched() {
+    return getTextContent(this);
+  }
+  function textContentSetterPatched(value) {
+    textContextSetter.call(this, value);
+  }
+  function parentNodeGetterPatched() {
+    const value = parentNodeGetter.call(this);
+    if (isNull(value)) {
+      return value;
+    }
+    return getShadowParent(this, value);
+  }
+  function parentElementGetterPatched() {
+    const value = parentNodeGetter.call(this);
+    if (isNull(value)) {
+      return null;
+    }
+    const parentNode = getShadowParent(this, value);
+    return parentNode instanceof Element ? parentNode : null;
+  }
+  function compareDocumentPositionPatched(otherNode) {
+    if (this === otherNode) {
+      return 0;
+    } else if (this.getRootNode() === otherNode) {
+      return 10;
+    } else if (getNodeOwnerKey(this) !== getNodeOwnerKey(otherNode)) {
+      return 35;
+    }
+    return compareDocumentPosition.call(this, otherNode);
+  }
+  function containsPatched(otherNode) {
+    if (otherNode == null || getNodeOwnerKey(this) !== getNodeOwnerKey(otherNode)) {
+      return false;
+    }
+    return (compareDocumentPosition.call(this, otherNode) & DOCUMENT_POSITION_CONTAINED_BY) !== 0;
+  }
+  function cloneNodePatched(deep) {
+    const clone = cloneNode.call(this, false);
+    if (!deep) {
+      return clone;
+    }
+    const childNodes = getInternalChildNodes(this);
+    for (let i = 0, len = childNodes.length; i < len; i += 1) {
+      clone.appendChild(childNodes[i].cloneNode(true));
+    }
+    return clone;
+  }
+  function childNodesGetterPatched() {
+    if (isSyntheticShadowHost(this)) {
+      const owner = getNodeOwner(this);
+      const childNodes = isNull(owner) ? [] : getAllMatches(owner, getFilteredChildNodes(this));
+      return createStaticNodeList(childNodes);
+    }
+    return childNodesGetter.call(this);
+  }
+  const nativeGetRootNode = _Node.prototype.getRootNode;
+  const getDocumentOrRootNode = !isUndefined(nativeGetRootNode) ? nativeGetRootNode : function() {
+    let node = this;
+    let nodeParent;
+    while (!isNull(nodeParent = parentNodeGetter.call(node))) {
+      node = nodeParent;
+    }
+    return node;
+  };
+  function getNearestRoot(node) {
+    const ownerNode = getNodeOwner(node);
+    if (isNull(ownerNode)) {
+      return getDocumentOrRootNode.call(node);
+    }
+    return getShadowRoot(ownerNode);
+  }
+  function getRootNodePatched(options) {
+    const composed = isUndefined(options) ? false : !!options.composed;
+    return isTrue(composed) ? getDocumentOrRootNode.call(this, options) : getNearestRoot(this);
+  }
+  defineProperties(_Node.prototype, {
+    firstChild: {
+      get() {
+        if (hasMountedChildren(this)) {
+          return firstChildGetterPatched.call(this);
+        }
+        return firstChildGetter.call(this);
+      },
+      enumerable: true,
+      configurable: true
+    },
+    lastChild: {
+      get() {
+        if (hasMountedChildren(this)) {
+          return lastChildGetterPatched.call(this);
+        }
+        return lastChildGetter.call(this);
+      },
+      enumerable: true,
+      configurable: true
+    },
+    textContent: {
+      get() {
+        if (isNodeShadowed(this) || isSyntheticShadowHost(this)) {
+          return textContentGetterPatched.call(this);
+        }
+        return textContentGetter.call(this);
+      },
+      set: textContentSetterPatched,
+      enumerable: true,
+      configurable: true
+    },
+    parentNode: {
+      get() {
+        if (isNodeShadowed(this)) {
+          return parentNodeGetterPatched.call(this);
+        }
+        const parentNode = parentNodeGetter.call(this);
+        if (!isNull(parentNode) && isSyntheticSlotElement(parentNode)) {
+          return getNodeOwner(parentNode);
+        }
+        return parentNode;
+      },
+      enumerable: true,
+      configurable: true
+    },
+    parentElement: {
+      get() {
+        if (isNodeShadowed(this)) {
+          return parentElementGetterPatched.call(this);
+        }
+        const parentElement = parentElementGetter.call(this);
+        if (!isNull(parentElement) && isSyntheticSlotElement(parentElement)) {
+          return getNodeOwner(parentElement);
+        }
+        return parentElement;
+      },
+      enumerable: true,
+      configurable: true
+    },
+    childNodes: {
+      get() {
+        if (hasMountedChildren(this)) {
+          return childNodesGetterPatched.call(this);
+        }
+        return childNodesGetter.call(this);
+      },
+      enumerable: true,
+      configurable: true
+    },
+    hasChildNodes: {
+      value() {
+        if (hasMountedChildren(this)) {
+          return hasChildNodesPatched.call(this);
+        }
+        return hasChildNodes.call(this);
+      },
+      enumerable: true,
+      writable: true,
+      configurable: true
+    },
+    compareDocumentPosition: {
+      value(otherNode) {
+        if (isGlobalPatchingSkipped(this)) {
+          return compareDocumentPosition.call(this, otherNode);
+        }
+        return compareDocumentPositionPatched.call(this, otherNode);
+      },
+      enumerable: true,
+      writable: true,
+      configurable: true
+    },
+    contains: {
+      value(otherNode) {
+        if (this === otherNode) {
+          return true;
+        }
+        if (otherNode == null) {
+          return false;
+        }
+        if (isNodeShadowed(this) || isSyntheticShadowHost(this)) {
+          return containsPatched.call(this, otherNode);
+        }
+        return contains.call(this, otherNode);
+      },
+      enumerable: true,
+      writable: true,
+      configurable: true
+    },
+    cloneNode: {
+      value(deep) {
+        if (isNodeShadowed(this) || isSyntheticShadowHost(this)) {
+          return cloneNodePatched.call(this, deep);
+        }
+        return cloneNode.call(this, deep);
+      },
+      enumerable: true,
+      writable: true,
+      configurable: true
+    },
+    getRootNode: {
+      value: getRootNodePatched,
+      enumerable: true,
+      configurable: true,
+      writable: true
+    },
+    isConnected: {
+      enumerable: true,
+      configurable: true,
+      get() {
+        return isConnected.call(this);
+      }
+    }
+  });
+  const getInternalChildNodes = function(node) {
+    return node.childNodes;
+  };
+  if (hasOwnProperty.call(HTMLElement.prototype, "contains")) {
+    defineProperty(HTMLElement.prototype, "contains", getOwnPropertyDescriptor(_Node.prototype, "contains"));
+  }
+  if (hasOwnProperty.call(HTMLElement.prototype, "parentElement")) {
+    defineProperty(HTMLElement.prototype, "parentElement", getOwnPropertyDescriptor(_Node.prototype, "parentElement"));
+  }
+  const EventListenerMap = new WeakMap();
+  const ComposedPathMap = new WeakMap();
+  function isEventListenerOrEventListenerObject$1(fnOrObj) {
+    return isFunction(fnOrObj) || isObject(fnOrObj) && !isNull(fnOrObj) && isFunction(fnOrObj.handleEvent);
+  }
+  function shouldInvokeListener(event, target, currentTarget) {
+    if (target === currentTarget) {
+      return true;
+    }
+    let composedPath2 = ComposedPathMap.get(event);
+    if (isUndefined(composedPath2)) {
+      composedPath2 = event.composedPath();
+      ComposedPathMap.set(event, composedPath2);
+    }
+    return composedPath2.includes(currentTarget);
+  }
+  function getEventListenerWrapper(fnOrObj) {
+    if (!isEventListenerOrEventListenerObject$1(fnOrObj)) {
+      return fnOrObj;
+    }
+    let wrapperFn = EventListenerMap.get(fnOrObj);
+    if (isUndefined(wrapperFn)) {
+      wrapperFn = function(event) {
+        const currentTarget = eventCurrentTargetGetter.call(event);
+        if (true) {
+          assert.invariant(isFalse(isSyntheticShadowHost(currentTarget)), "This routine should not be used to wrap event listeners for host elements and shadow roots.");
+        }
+        const actualTarget = getActualTarget(event);
+        if (!shouldInvokeListener(event, actualTarget, currentTarget)) {
+          return;
+        }
+        return isFunction(fnOrObj) ? fnOrObj.call(this, event) : fnOrObj.handleEvent && fnOrObj.handleEvent(event);
+      };
+      EventListenerMap.set(fnOrObj, wrapperFn);
+    }
+    return wrapperFn;
+  }
+  const eventToContextMap = new WeakMap();
+  function getEventHandler(listener) {
+    if (isFunction(listener)) {
+      return listener;
+    } else {
+      return listener.handleEvent;
+    }
+  }
+  function isEventListenerOrEventListenerObject(listener) {
+    return isFunction(listener) || isFunction(listener === null || listener === void 0 ? void 0 : listener.handleEvent);
+  }
+  const customElementToWrappedListeners = new WeakMap();
+  function getEventMap(elm) {
+    let listenerInfo = customElementToWrappedListeners.get(elm);
+    if (isUndefined(listenerInfo)) {
+      listenerInfo = create(null);
+      customElementToWrappedListeners.set(elm, listenerInfo);
+    }
+    return listenerInfo;
+  }
+  function getActualTarget(event) {
+    var _a;
+    return (_a = eventToShadowRootMap.get(event)) !== null && _a !== void 0 ? _a : eventTargetGetter.call(event);
+  }
+  const shadowRootEventListenerMap = new WeakMap();
+  function getManagedShadowRootListener(listener) {
+    if (!isEventListenerOrEventListenerObject(listener)) {
+      throw new TypeError();
+    }
+    let managedListener = shadowRootEventListenerMap.get(listener);
+    if (isUndefined(managedListener)) {
+      managedListener = {
+        identity: listener,
+        placement: 1,
+        handleEvent(event) {
+          let currentTarget = eventCurrentTargetGetter.call(event);
+          if (!isInstanceOfNativeShadowRoot(currentTarget)) {
+            currentTarget = getShadowRoot(currentTarget);
+          }
+          const actualTarget = getActualTarget(event);
+          if (shouldInvokeListener(event, actualTarget, currentTarget)) {
+            getEventHandler(listener).call(currentTarget, event);
+          }
+        }
+      };
+      shadowRootEventListenerMap.set(listener, managedListener);
+    }
+    return managedListener;
+  }
+  const customElementEventListenerMap = new WeakMap();
+  function getManagedCustomElementListener(listener) {
+    if (!isEventListenerOrEventListenerObject(listener)) {
+      throw new TypeError();
+    }
+    let managedListener = customElementEventListenerMap.get(listener);
+    if (isUndefined(managedListener)) {
+      managedListener = {
+        identity: listener,
+        placement: 0,
+        handleEvent(event) {
+          const currentTarget = eventCurrentTargetGetter.call(event);
+          const actualTarget = getActualTarget(event);
+          if (shouldInvokeListener(event, actualTarget, currentTarget)) {
+            getEventHandler(listener).call(currentTarget, event);
+          }
+        }
+      };
+      customElementEventListenerMap.set(listener, managedListener);
+    }
+    return managedListener;
+  }
+  function indexOfManagedListener(listeners, listener) {
+    return ArrayFindIndex.call(listeners, (l) => l.identity === listener.identity);
+  }
+  function domListener(evt) {
+    let immediatePropagationStopped = false;
+    let propagationStopped = false;
+    const {
+      type,
+      stopImmediatePropagation,
+      stopPropagation
+    } = evt;
+    const currentTarget = eventCurrentTargetGetter.call(evt);
+    const listenerMap = getEventMap(currentTarget);
+    const listeners = listenerMap[type];
+    defineProperty(evt, "stopImmediatePropagation", {
+      value() {
+        immediatePropagationStopped = true;
+        stopImmediatePropagation.call(evt);
+      },
+      writable: true,
+      enumerable: true,
+      configurable: true
+    });
+    defineProperty(evt, "stopPropagation", {
+      value() {
+        propagationStopped = true;
+        stopPropagation.call(evt);
+      },
+      writable: true,
+      enumerable: true,
+      configurable: true
+    });
+    const bookkeeping = ArraySlice.call(listeners);
+    function invokeListenersByPlacement(placement) {
+      forEach.call(bookkeeping, (listener) => {
+        if (isFalse(immediatePropagationStopped) && listener.placement === placement) {
+          if (indexOfManagedListener(listeners, listener) !== -1) {
+            listener.handleEvent.call(void 0, evt);
+          }
+        }
+      });
+    }
+    eventToContextMap.set(evt, 1);
+    invokeListenersByPlacement(1);
+    if (isFalse(immediatePropagationStopped) && isFalse(propagationStopped)) {
+      eventToContextMap.set(evt, 0);
+      invokeListenersByPlacement(0);
+    }
+    eventToContextMap.set(evt, 2);
+  }
+  function attachDOMListener(elm, type, managedListener) {
+    const listenerMap = getEventMap(elm);
+    let listeners = listenerMap[type];
+    if (isUndefined(listeners)) {
+      listeners = listenerMap[type] = [];
+    }
+    if (indexOfManagedListener(listeners, managedListener) !== -1) {
+      return;
+    }
+    if (listeners.length === 0) {
+      addEventListener2.call(elm, type, domListener);
+    }
+    ArrayPush.call(listeners, managedListener);
+  }
+  function detachDOMListener(elm, type, managedListener) {
+    const listenerMap = getEventMap(elm);
+    let index;
+    let listeners;
+    if (!isUndefined(listeners = listenerMap[type]) && (index = indexOfManagedListener(listeners, managedListener)) !== -1) {
+      ArraySplice.call(listeners, index, 1);
+      if (listeners.length === 0) {
+        removeEventListener2.call(elm, type, domListener);
+      }
+    }
+  }
+  function addCustomElementEventListener(type, listener, _options) {
+    if (true) {
+      if (!isEventListenerOrEventListenerObject(listener)) {
+        throw new TypeError(`Invalid second argument for Element.addEventListener() in ${toString(this)} for event "${type}". Expected EventListener or EventListenerObject but received ${listener}.`);
+      }
+    }
+    if (isEventListenerOrEventListenerObject(listener)) {
+      const managedListener = getManagedCustomElementListener(listener);
+      attachDOMListener(this, type, managedListener);
+    }
+  }
+  function removeCustomElementEventListener(type, listener, _options) {
+    if (isEventListenerOrEventListenerObject(listener)) {
+      const managedListener = getManagedCustomElementListener(listener);
+      detachDOMListener(this, type, managedListener);
+    }
+  }
+  function addShadowRootEventListener(sr, type, listener, _options) {
+    if (true) {
+      if (!isEventListenerOrEventListenerObject(listener)) {
+        throw new TypeError(`Invalid second argument for ShadowRoot.addEventListener() in ${toString(sr)} for event "${type}". Expected EventListener or EventListenerObject but received ${listener}.`);
+      }
+    }
+    if (isEventListenerOrEventListenerObject(listener)) {
+      const elm = getHost(sr);
+      const managedListener = getManagedShadowRootListener(listener);
+      attachDOMListener(elm, type, managedListener);
+    }
+  }
+  function removeShadowRootEventListener(sr, type, listener, _options) {
+    if (isEventListenerOrEventListenerObject(listener)) {
+      const elm = getHost(sr);
+      const managedListener = getManagedShadowRootListener(listener);
+      detachDOMListener(elm, type, managedListener);
+    }
+  }
+  const InternalSlot = new WeakMap();
+  const {
+    createDocumentFragment
+  } = document;
+  function hasInternalSlot(root) {
+    return InternalSlot.has(root);
+  }
+  function getInternalSlot(root) {
+    const record = InternalSlot.get(root);
+    if (isUndefined(record)) {
+      throw new TypeError();
+    }
+    return record;
+  }
+  defineProperty(_Node.prototype, KEY__SHADOW_RESOLVER, {
+    set(fn) {
+      if (isUndefined(fn))
+        return;
+      this[KEY__SHADOW_RESOLVER_PRIVATE] = fn;
+      setNodeOwnerKey(this, fn.nodeKey);
+    },
+    get() {
+      return this[KEY__SHADOW_RESOLVER_PRIVATE];
+    },
+    configurable: true,
+    enumerable: true
+  });
+  defineProperty(_globalThis, KEY__IS_NATIVE_SHADOW_ROOT_DEFINED, {
+    value: isNativeShadowRootDefined
+  });
+  if (isUndefined(_globalThis[KEY__NATIVE_GET_ELEMENT_BY_ID])) {
+    defineProperty(_globalThis, KEY__NATIVE_GET_ELEMENT_BY_ID, {
+      value: getElementById,
+      configurable: true
+    });
+  }
+  if (isUndefined(_globalThis[KEY__NATIVE_QUERY_SELECTOR_ALL])) {
+    defineProperty(_globalThis, KEY__NATIVE_QUERY_SELECTOR_ALL, {
+      value: querySelectorAll,
+      configurable: true
+    });
+  }
+  function getShadowRootResolver(node) {
+    return node[KEY__SHADOW_RESOLVER];
+  }
+  function setShadowRootResolver(node, fn) {
+    node[KEY__SHADOW_RESOLVER] = fn;
+  }
+  function isDelegatingFocus(host) {
+    return getInternalSlot(host).delegatesFocus;
+  }
+  function getHost(root) {
+    return getInternalSlot(root).host;
+  }
+  function getShadowRoot(elm) {
+    return getInternalSlot(elm).shadowRoot;
+  }
+  function isSyntheticShadowHost(node) {
+    const shadowRootRecord = InternalSlot.get(node);
+    return !isUndefined(shadowRootRecord) && node === shadowRootRecord.host;
+  }
+  function isSyntheticShadowRoot(node) {
+    const shadowRootRecord = InternalSlot.get(node);
+    return !isUndefined(shadowRootRecord) && node === shadowRootRecord.shadowRoot;
+  }
+  let uid = 0;
+  function attachShadow(elm, options) {
+    if (InternalSlot.has(elm)) {
+      throw new Error(`Failed to execute 'attachShadow' on 'Element': Shadow root cannot be created on a host which already hosts a shadow tree.`);
+    }
+    const {
+      mode,
+      delegatesFocus
+    } = options;
+    const doc = getOwnerDocument(elm);
+    const sr = createDocumentFragment.call(doc);
+    const record = {
+      mode,
+      delegatesFocus: !!delegatesFocus,
+      host: elm,
+      shadowRoot: sr
+    };
+    InternalSlot.set(sr, record);
+    InternalSlot.set(elm, record);
+    const shadowResolver = () => sr;
+    const x = shadowResolver.nodeKey = uid++;
+    setNodeKey(elm, x);
+    setShadowRootResolver(sr, shadowResolver);
+    setPrototypeOf(sr, SyntheticShadowRoot.prototype);
+    return sr;
+  }
+  const SyntheticShadowRootDescriptors = {
+    constructor: {
+      writable: true,
+      configurable: true,
+      value: SyntheticShadowRoot
+    },
+    toString: {
+      writable: true,
+      configurable: true,
+      value() {
+        return `[object ShadowRoot]`;
+      }
+    },
+    synthetic: {
+      writable: false,
+      enumerable: false,
+      configurable: false,
+      value: true
+    }
+  };
+  const ShadowRootDescriptors = {
+    activeElement: {
+      enumerable: true,
+      configurable: true,
+      get() {
+        const host = getHost(this);
+        const doc = getOwnerDocument(host);
+        const activeElement = DocumentPrototypeActiveElement.call(doc);
+        if (isNull(activeElement)) {
+          return activeElement;
+        }
+        if ((compareDocumentPosition.call(host, activeElement) & DOCUMENT_POSITION_CONTAINED_BY) === 0) {
+          return null;
+        }
+        let node = activeElement;
+        while (!isNodeOwnedBy(host, node)) {
+          node = parentElementGetter.call(node);
+        }
+        if (isSlotElement(node)) {
+          return null;
+        }
+        return node;
+      }
+    },
+    delegatesFocus: {
+      configurable: true,
+      get() {
+        return getInternalSlot(this).delegatesFocus;
+      }
+    },
+    elementFromPoint: {
+      writable: true,
+      enumerable: true,
+      configurable: true,
+      value(left, top) {
+        const host = getHost(this);
+        const doc = getOwnerDocument(host);
+        return fauxElementFromPoint(this, doc, left, top);
+      }
+    },
+    elementsFromPoint: {
+      writable: true,
+      enumerable: true,
+      configurable: true,
+      value(left, top) {
+        const host = getHost(this);
+        const doc = getOwnerDocument(host);
+        return fauxElementsFromPoint(this, doc, left, top);
+      }
+    },
+    getSelection: {
+      writable: true,
+      enumerable: true,
+      configurable: true,
+      value() {
+        throw new Error('Disallowed method "getSelection" on ShadowRoot.');
+      }
+    },
+    host: {
+      enumerable: true,
+      configurable: true,
+      get() {
+        return getHost(this);
+      }
+    },
+    mode: {
+      configurable: true,
+      get() {
+        return getInternalSlot(this).mode;
+      }
+    },
+    styleSheets: {
+      enumerable: true,
+      configurable: true,
+      get() {
+        throw new Error();
+      }
+    }
+  };
+  const eventToShadowRootMap = new WeakMap();
+  const NodePatchDescriptors = {
+    insertBefore: {
+      writable: true,
+      enumerable: true,
+      configurable: true,
+      value(newChild, refChild) {
+        insertBefore.call(getHost(this), newChild, refChild);
+        return newChild;
+      }
+    },
+    removeChild: {
+      writable: true,
+      enumerable: true,
+      configurable: true,
+      value(oldChild) {
+        removeChild.call(getHost(this), oldChild);
+        return oldChild;
+      }
+    },
+    appendChild: {
+      writable: true,
+      enumerable: true,
+      configurable: true,
+      value(newChild) {
+        appendChild.call(getHost(this), newChild);
+        return newChild;
+      }
+    },
+    replaceChild: {
+      writable: true,
+      enumerable: true,
+      configurable: true,
+      value(newChild, oldChild) {
+        replaceChild.call(getHost(this), newChild, oldChild);
+        return oldChild;
+      }
+    },
+    addEventListener: {
+      writable: true,
+      enumerable: true,
+      configurable: true,
+      value(type, listener, options) {
+        addShadowRootEventListener(this, type, listener);
+      }
+    },
+    dispatchEvent: {
+      writable: true,
+      enumerable: true,
+      configurable: true,
+      value(evt) {
+        eventToShadowRootMap.set(evt, this);
+        return dispatchEvent.apply(getHost(this), arguments);
+      }
+    },
+    removeEventListener: {
+      writable: true,
+      enumerable: true,
+      configurable: true,
+      value(type, listener, options) {
+        removeShadowRootEventListener(this, type, listener);
+      }
+    },
+    baseURI: {
+      enumerable: true,
+      configurable: true,
+      get() {
+        return getHost(this).baseURI;
+      }
+    },
+    childNodes: {
+      enumerable: true,
+      configurable: true,
+      get() {
+        return createStaticNodeList(shadowRootChildNodes(this));
+      }
+    },
+    cloneNode: {
+      writable: true,
+      enumerable: true,
+      configurable: true,
+      value() {
+        throw new Error('Disallowed method "cloneNode" on ShadowRoot.');
+      }
+    },
+    compareDocumentPosition: {
+      writable: true,
+      enumerable: true,
+      configurable: true,
+      value(otherNode) {
+        const host = getHost(this);
+        if (this === otherNode) {
+          return 0;
+        } else if (this.contains(otherNode)) {
+          return 20;
+        } else if (compareDocumentPosition.call(host, otherNode) & DOCUMENT_POSITION_CONTAINED_BY) {
+          return 37;
+        } else {
+          return 35;
+        }
+      }
+    },
+    contains: {
+      writable: true,
+      enumerable: true,
+      configurable: true,
+      value(otherNode) {
+        if (this === otherNode) {
+          return true;
+        }
+        const host = getHost(this);
+        return (compareDocumentPosition.call(host, otherNode) & DOCUMENT_POSITION_CONTAINED_BY) !== 0 && isNodeOwnedBy(host, otherNode);
+      }
+    },
+    firstChild: {
+      enumerable: true,
+      configurable: true,
+      get() {
+        const childNodes = getInternalChildNodes(this);
+        return childNodes[0] || null;
+      }
+    },
+    lastChild: {
+      enumerable: true,
+      configurable: true,
+      get() {
+        const childNodes = getInternalChildNodes(this);
+        return childNodes[childNodes.length - 1] || null;
+      }
+    },
+    hasChildNodes: {
+      writable: true,
+      enumerable: true,
+      configurable: true,
+      value() {
+        const childNodes = getInternalChildNodes(this);
+        return childNodes.length > 0;
+      }
+    },
+    isConnected: {
+      enumerable: true,
+      configurable: true,
+      get() {
+        return isConnected.call(getHost(this));
+      }
+    },
+    nextSibling: {
+      enumerable: true,
+      configurable: true,
+      get() {
+        return null;
+      }
+    },
+    previousSibling: {
+      enumerable: true,
+      configurable: true,
+      get() {
+        return null;
+      }
+    },
+    nodeName: {
+      enumerable: true,
+      configurable: true,
+      get() {
+        return "#document-fragment";
+      }
+    },
+    nodeType: {
+      enumerable: true,
+      configurable: true,
+      get() {
+        return 11;
+      }
+    },
+    nodeValue: {
+      enumerable: true,
+      configurable: true,
+      get() {
+        return null;
+      }
+    },
+    ownerDocument: {
+      enumerable: true,
+      configurable: true,
+      get() {
+        return getHost(this).ownerDocument;
+      }
+    },
+    parentElement: {
+      enumerable: true,
+      configurable: true,
+      get() {
+        return null;
+      }
+    },
+    parentNode: {
+      enumerable: true,
+      configurable: true,
+      get() {
+        return null;
+      }
+    },
+    textContent: {
+      enumerable: true,
+      configurable: true,
+      get() {
+        const childNodes = getInternalChildNodes(this);
+        let textContent = "";
+        for (let i = 0, len = childNodes.length; i < len; i += 1) {
+          const currentNode = childNodes[i];
+          if (currentNode.nodeType !== COMMENT_NODE) {
+            textContent += getTextContent(currentNode);
+          }
+        }
+        return textContent;
+      },
+      set(v) {
+        const host = getHost(this);
+        textContextSetter.call(host, v);
+      }
+    },
+    getRootNode: {
+      writable: true,
+      enumerable: true,
+      configurable: true,
+      value(options) {
+        return !isUndefined(options) && isTrue(options.composed) ? getHost(this).getRootNode(options) : this;
+      }
+    }
+  };
+  const ElementPatchDescriptors = {
+    innerHTML: {
+      enumerable: true,
+      configurable: true,
+      get() {
+        const childNodes = getInternalChildNodes(this);
+        let innerHTML = "";
+        for (let i = 0, len = childNodes.length; i < len; i += 1) {
+          innerHTML += getOuterHTML(childNodes[i]);
+        }
+        return innerHTML;
+      },
+      set(v) {
+        const host = getHost(this);
+        innerHTMLSetter.call(host, v);
+      }
+    }
+  };
+  const ParentNodePatchDescriptors = {
+    childElementCount: {
+      enumerable: true,
+      configurable: true,
+      get() {
+        return this.children.length;
+      }
+    },
+    children: {
+      enumerable: true,
+      configurable: true,
+      get() {
+        return createStaticHTMLCollection(ArrayFilter.call(shadowRootChildNodes(this), (elm) => elm instanceof Element));
+      }
+    },
+    firstElementChild: {
+      enumerable: true,
+      configurable: true,
+      get() {
+        return this.children[0] || null;
+      }
+    },
+    lastElementChild: {
+      enumerable: true,
+      configurable: true,
+      get() {
+        const {
+          children
+        } = this;
+        return children.item(children.length - 1) || null;
+      }
+    },
+    getElementById: {
+      writable: true,
+      enumerable: true,
+      configurable: true,
+      value() {
+        throw new Error('Disallowed method "getElementById" on ShadowRoot.');
+      }
+    },
+    querySelector: {
+      writable: true,
+      enumerable: true,
+      configurable: true,
+      value(selectors) {
+        return shadowRootQuerySelector(this, selectors);
+      }
+    },
+    querySelectorAll: {
+      writable: true,
+      enumerable: true,
+      configurable: true,
+      value(selectors) {
+        return createStaticNodeList(shadowRootQuerySelectorAll(this, selectors));
+      }
+    }
+  };
+  assign(SyntheticShadowRootDescriptors, NodePatchDescriptors, ParentNodePatchDescriptors, ElementPatchDescriptors, ShadowRootDescriptors);
+  function SyntheticShadowRoot() {
+    throw new TypeError("Illegal constructor");
+  }
+  SyntheticShadowRoot.prototype = create(DocumentFragment.prototype, SyntheticShadowRootDescriptors);
+  defineProperty(SyntheticShadowRoot, Symbol.hasInstance, {
+    value: function(object) {
+      return isObject(object) && !isNull(object) && (isInstanceOfNativeShadowRoot(object) || getPrototypeOf(object) === SyntheticShadowRoot.prototype);
+    }
+  });
+  /**
+  @license
+  Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+  This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+  The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+  The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+  Code distributed by Google as part of the polymer project is also
+  subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+  */
+  function pathComposer(startNode, composed) {
+    const composedPath2 = [];
+    let startRoot;
+    if (startNode instanceof Window) {
+      startRoot = startNode;
+    } else if (startNode instanceof _Node) {
+      startRoot = startNode.getRootNode();
+    } else {
+      return composedPath2;
+    }
+    let current = startNode;
+    while (!isNull(current)) {
+      composedPath2.push(current);
+      if (current instanceof Element || current instanceof Text) {
+        const assignedSlot = current.assignedSlot;
+        if (!isNull(assignedSlot)) {
+          current = assignedSlot;
+        } else {
+          current = current.parentNode;
+        }
+      } else if ((isSyntheticShadowRoot(current) || isInstanceOfNativeShadowRoot(current)) && (composed || current !== startRoot)) {
+        current = current.host;
+      } else if (current instanceof _Node) {
+        current = current.parentNode;
+      } else {
+        current = null;
+      }
+    }
+    let doc;
+    if (startNode instanceof Window) {
+      doc = startNode.document;
+    } else {
+      doc = getOwnerDocument(startNode);
+    }
+    if (composedPath2[composedPath2.length - 1] === doc) {
+      composedPath2.push(window);
+    }
+    return composedPath2;
+  }
+  /**
+  @license
+  Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+  This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+  The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+  The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+  Code distributed by Google as part of the polymer project is also
+  subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+  */
+  function retarget(refNode, path) {
+    if (isNull(refNode)) {
+      return null;
+    }
+    const refNodePath = pathComposer(refNode, true);
+    const p$ = path;
+    for (let i = 0, ancestor, lastRoot, root, rootIdx; i < p$.length; i++) {
+      ancestor = p$[i];
+      root = ancestor instanceof Window ? ancestor : ancestor.getRootNode();
+      if (root !== lastRoot) {
+        rootIdx = refNodePath.indexOf(root);
+        lastRoot = root;
+      }
+      if (!isSyntheticShadowRoot(root) || !isUndefined(rootIdx) && rootIdx > -1) {
+        return ancestor;
+      }
+    }
+    return null;
+  }
+  function fauxElementFromPoint(context, doc, left, top) {
+    const element = elementFromPoint.call(doc, left, top);
+    if (isNull(element)) {
+      return element;
+    }
+    return retarget(context, pathComposer(element, true));
+  }
+  function elemFromPoint(left, top) {
+    return fauxElementFromPoint(this, this, left, top);
+  }
+  Document.prototype.elementFromPoint = elemFromPoint;
+  function elemsFromPoint(left, top) {
+    return fauxElementsFromPoint(this, this, left, top);
+  }
+  Document.prototype.elementsFromPoint = elemsFromPoint;
+  defineProperty(Document.prototype, "activeElement", {
+    get() {
+      let node = DocumentPrototypeActiveElement.call(this);
+      if (isNull(node)) {
+        return node;
+      }
+      while (!isUndefined(getNodeOwnerKey(node))) {
+        node = parentElementGetter.call(node);
+        if (isNull(node)) {
+          return null;
+        }
+      }
+      if (node.tagName === "HTML") {
+        node = this.body;
+      }
+      return node;
+    },
+    enumerable: true,
+    configurable: true
+  });
+  defineProperty(Document.prototype, "getElementById", {
+    value() {
+      const elm = getElementById.apply(this, ArraySlice.call(arguments));
+      if (isNull(elm)) {
+        return null;
+      }
+      return isUndefined(getNodeOwnerKey(elm)) || isGlobalPatchingSkipped(elm) ? elm : null;
+    },
+    writable: true,
+    enumerable: true,
+    configurable: true
+  });
+  defineProperty(Document.prototype, "querySelector", {
+    value() {
+      const elements = arrayFromCollection(querySelectorAll.apply(this, ArraySlice.call(arguments)));
+      const filtered = ArrayFind.call(elements, (elm) => isUndefined(getNodeOwnerKey(elm)) || isGlobalPatchingSkipped(elm));
+      return !isUndefined(filtered) ? filtered : null;
+    },
+    writable: true,
+    enumerable: true,
+    configurable: true
+  });
+  defineProperty(Document.prototype, "querySelectorAll", {
+    value() {
+      const elements = arrayFromCollection(querySelectorAll.apply(this, ArraySlice.call(arguments)));
+      const filtered = ArrayFilter.call(elements, (elm) => isUndefined(getNodeOwnerKey(elm)) || isGlobalPatchingSkipped(elm));
+      return createStaticNodeList(filtered);
+    },
+    writable: true,
+    enumerable: true,
+    configurable: true
+  });
+  defineProperty(Document.prototype, "getElementsByClassName", {
+    value() {
+      const elements = arrayFromCollection(getElementsByClassName.apply(this, ArraySlice.call(arguments)));
+      const filtered = ArrayFilter.call(elements, (elm) => isUndefined(getNodeOwnerKey(elm)) || isGlobalPatchingSkipped(elm));
+      return createStaticHTMLCollection(filtered);
+    },
+    writable: true,
+    enumerable: true,
+    configurable: true
+  });
+  defineProperty(Document.prototype, "getElementsByTagName", {
+    value() {
+      const elements = arrayFromCollection(getElementsByTagName.apply(this, ArraySlice.call(arguments)));
+      const filtered = ArrayFilter.call(elements, (elm) => isUndefined(getNodeOwnerKey(elm)) || isGlobalPatchingSkipped(elm));
+      return createStaticHTMLCollection(filtered);
+    },
+    writable: true,
+    enumerable: true,
+    configurable: true
+  });
+  defineProperty(Document.prototype, "getElementsByTagNameNS", {
+    value() {
+      const elements = arrayFromCollection(getElementsByTagNameNS.apply(this, ArraySlice.call(arguments)));
+      const filtered = ArrayFilter.call(elements, (elm) => isUndefined(getNodeOwnerKey(elm)) || isGlobalPatchingSkipped(elm));
+      return createStaticHTMLCollection(filtered);
+    },
+    writable: true,
+    enumerable: true,
+    configurable: true
+  });
+  defineProperty(getOwnPropertyDescriptor(HTMLDocument.prototype, "getElementsByName") ? HTMLDocument.prototype : Document.prototype, "getElementsByName", {
+    value() {
+      const elements = arrayFromCollection(getElementsByName.apply(this, ArraySlice.call(arguments)));
+      const filtered = ArrayFilter.call(elements, (elm) => isUndefined(getNodeOwnerKey(elm)) || isGlobalPatchingSkipped(elm));
+      return createStaticNodeList(filtered);
+    },
+    writable: true,
+    enumerable: true,
+    configurable: true
+  });
+  Object.defineProperty(window, "ShadowRoot", {
+    value: SyntheticShadowRoot,
+    configurable: true,
+    writable: true
+  });
+  const composedDescriptor = Object.getOwnPropertyDescriptor(Event.prototype, "composed");
+  function detect$1() {
+    if (!composedDescriptor) {
+      return false;
+    }
+    let clickEvent = new Event("click");
+    const button = document.createElement("button");
+    button.addEventListener("click", (event) => clickEvent = event);
+    button.click();
+    return !composedDescriptor.get.call(clickEvent);
+  }
+  const originalClickDescriptor = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "click");
+  function handleClick(event) {
+    Object.defineProperty(event, "composed", {
+      configurable: true,
+      enumerable: true,
+      get() {
+        return true;
+      }
+    });
+  }
+  function apply$1() {
+    HTMLElement.prototype.click = function() {
+      addEventListener2.call(this, "click", handleClick);
+      try {
+        originalClickDescriptor.value.call(this);
+      } finally {
+        removeEventListener2.call(this, "click", handleClick);
+      }
+    };
+  }
+  if (detect$1()) {
+    apply$1();
+  }
+  function detect() {
+    return new Event("test", {
+      composed: true
+    }).composed !== true;
+  }
+  function apply() {
+    const composedEvents = assign(create(null), {
+      beforeinput: 1,
+      blur: 1,
+      click: 1,
+      compositionend: 1,
+      compositionstart: 1,
+      compositionupdate: 1,
+      copy: 1,
+      cut: 1,
+      dblclick: 1,
+      DOMActivate: 1,
+      DOMFocusIn: 1,
+      DOMFocusOut: 1,
+      drag: 1,
+      dragend: 1,
+      dragenter: 1,
+      dragleave: 1,
+      dragover: 1,
+      dragstart: 1,
+      drop: 1,
+      focus: 1,
+      focusin: 1,
+      focusout: 1,
+      gotpointercapture: 1,
+      input: 1,
+      keydown: 1,
+      keypress: 1,
+      keyup: 1,
+      lostpointercapture: 1,
+      mousedown: 1,
+      mouseenter: 1,
+      mouseleave: 1,
+      mousemove: 1,
+      mouseout: 1,
+      mouseover: 1,
+      mouseup: 1,
+      paste: 1,
+      pointercancel: 1,
+      pointerdown: 1,
+      pointerenter: 1,
+      pointerleave: 1,
+      pointermove: 1,
+      pointerout: 1,
+      pointerover: 1,
+      pointerup: 1,
+      touchcancel: 1,
+      touchend: 1,
+      touchmove: 1,
+      touchstart: 1,
+      wheel: 1
+    });
+    const EventConstructor = Event;
+    function PatchedEvent(type, eventInitDict) {
+      const event = new EventConstructor(type, eventInitDict);
+      const isComposed = !!(eventInitDict && eventInitDict.composed);
+      Object.defineProperties(event, {
+        composed: {
+          get() {
+            return isComposed;
+          },
+          configurable: true,
+          enumerable: true
+        }
+      });
+      return event;
+    }
+    PatchedEvent.prototype = EventConstructor.prototype;
+    PatchedEvent.AT_TARGET = EventConstructor.AT_TARGET;
+    PatchedEvent.BUBBLING_PHASE = EventConstructor.BUBBLING_PHASE;
+    PatchedEvent.CAPTURING_PHASE = EventConstructor.CAPTURING_PHASE;
+    PatchedEvent.NONE = EventConstructor.NONE;
+    window.Event = PatchedEvent;
+    Object.defineProperties(Event.prototype, {
+      composed: {
+        get() {
+          const {
+            type
+          } = this;
+          return composedEvents[type] === 1;
+        },
+        configurable: true,
+        enumerable: true
+      }
+    });
+  }
+  if (detect()) {
+    apply();
+  }
+  const CustomEventConstructor = CustomEvent;
+  function PatchedCustomEvent(type, eventInitDict) {
+    const event = new CustomEventConstructor(type, eventInitDict);
+    const isComposed = !!(eventInitDict && eventInitDict.composed);
+    Object.defineProperties(event, {
+      composed: {
+        get() {
+          return isComposed;
+        },
+        configurable: true,
+        enumerable: true
+      }
+    });
+    return event;
+  }
+  PatchedCustomEvent.prototype = CustomEventConstructor.prototype;
+  window.CustomEvent = PatchedCustomEvent;
+  if (typeof ClipboardEvent !== "undefined") {
+    const isComposedType = assign(create(null), {
+      copy: 1,
+      cut: 1,
+      paste: 1
+    });
+    defineProperties(ClipboardEvent.prototype, {
+      composed: {
+        get() {
+          const {
+            type
+          } = this;
+          return isComposedType[type] === 1;
+        },
+        configurable: true,
+        enumerable: true
+      }
+    });
+  }
+  const OriginalMutationObserver = MutationObserver;
+  const {
+    disconnect: originalDisconnect,
+    observe: originalObserve,
+    takeRecords: originalTakeRecords
+  } = OriginalMutationObserver.prototype;
+  const wrapperLookupField = "$$lwcObserverCallbackWrapper$$";
+  const observerLookupField = "$$lwcNodeObservers$$";
+  const observerToNodesMap = new WeakMap();
+  function getNodeObservers(node) {
+    return node[observerLookupField];
+  }
+  function setNodeObservers(node, observers) {
+    node[observerLookupField] = observers;
+  }
+  function retargetMutationRecord(originalRecord) {
+    const {
+      addedNodes,
+      removedNodes,
+      target,
+      type
+    } = originalRecord;
+    const retargetedRecord = create(MutationRecord.prototype);
+    defineProperties(retargetedRecord, {
+      addedNodes: {
+        get() {
+          return addedNodes;
+        },
+        enumerable: true,
+        configurable: true
+      },
+      removedNodes: {
+        get() {
+          return removedNodes;
+        },
+        enumerable: true,
+        configurable: true
+      },
+      type: {
+        get() {
+          return type;
+        },
+        enumerable: true,
+        configurable: true
+      },
+      target: {
+        get() {
+          return target.shadowRoot;
+        },
+        enumerable: true,
+        configurable: true
+      }
+    });
+    return retargetedRecord;
+  }
+  function isQualifiedObserver(observer2, target) {
+    let parentNode = target;
+    while (!isNull(parentNode)) {
+      const parentNodeObservers = getNodeObservers(parentNode);
+      if (!isUndefined(parentNodeObservers) && (parentNodeObservers[0] === observer2 || ArrayIndexOf.call(parentNodeObservers, observer2) !== -1)) {
+        return true;
+      }
+      parentNode = parentNode.parentNode;
+    }
+    return false;
+  }
+  function filterMutationRecords(mutations, observer2) {
+    return ArrayReduce.call(mutations, (filteredSet, record) => {
+      const {
+        target,
+        addedNodes,
+        removedNodes,
+        type
+      } = record;
+      if (type === "childList" && !isUndefined(getNodeKey(target))) {
+        if (addedNodes.length > 0) {
+          const sampleNode = addedNodes[0];
+          if (isQualifiedObserver(observer2, sampleNode)) {
+            const nodeObservers = getNodeObservers(target);
+            if (nodeObservers && (nodeObservers[0] === observer2 || ArrayIndexOf.call(nodeObservers, observer2) !== -1)) {
+              ArrayPush.call(filteredSet, record);
+            } else {
+              ArrayPush.call(filteredSet, retargetMutationRecord(record));
+            }
+          }
+        } else {
+          const shadowRoot = target.shadowRoot;
+          const sampleNode = removedNodes[0];
+          if (getNodeNearestOwnerKey(target) === getNodeNearestOwnerKey(sampleNode) && isQualifiedObserver(observer2, target)) {
+            ArrayPush.call(filteredSet, record);
+          } else if (shadowRoot) {
+            const shadowRootObservers = getNodeObservers(shadowRoot);
+            if (shadowRootObservers && (shadowRootObservers[0] === observer2 || ArrayIndexOf.call(shadowRootObservers, observer2) !== -1)) {
+              ArrayPush.call(filteredSet, retargetMutationRecord(record));
+            }
+          }
+        }
+      } else {
+        if (isQualifiedObserver(observer2, target)) {
+          ArrayPush.call(filteredSet, record);
+        }
+      }
+      return filteredSet;
+    }, []);
+  }
+  function getWrappedCallback(callback) {
+    let wrappedCallback = callback[wrapperLookupField];
+    if (isUndefined(wrappedCallback)) {
+      wrappedCallback = callback[wrapperLookupField] = (mutations, observer2) => {
+        const filteredRecords = filterMutationRecords(mutations, observer2);
+        if (filteredRecords.length === 0) {
+          return;
+        }
+        callback.call(observer2, filteredRecords, observer2);
+      };
+    }
+    return wrappedCallback;
+  }
+  function PatchedMutationObserver(callback) {
+    const wrappedCallback = getWrappedCallback(callback);
+    const observer2 = new OriginalMutationObserver(wrappedCallback);
+    return observer2;
+  }
+  function patchedDisconnect() {
+    originalDisconnect.call(this);
+    const observedNodes = observerToNodesMap.get(this);
+    if (!isUndefined(observedNodes)) {
+      forEach.call(observedNodes, (observedNode) => {
+        const observers = observedNode[observerLookupField];
+        if (!isUndefined(observers)) {
+          const index = ArrayIndexOf.call(observers, this);
+          if (index !== -1) {
+            ArraySplice.call(observers, index, 1);
+          }
+        }
+      });
+      observedNodes.length = 0;
+    }
+  }
+  function patchedObserve(target, options) {
+    let targetObservers = getNodeObservers(target);
+    if (isUndefined(targetObservers)) {
+      targetObservers = [];
+      setNodeObservers(target, targetObservers);
+    }
+    if (ArrayIndexOf.call(targetObservers, this) === -1) {
+      ArrayPush.call(targetObservers, this);
+    }
+    if (isSyntheticShadowRoot(target)) {
+      target = target.host;
+    }
+    if (observerToNodesMap.has(this)) {
+      const observedNodes = observerToNodesMap.get(this);
+      if (ArrayIndexOf.call(observedNodes, target) === -1) {
+        ArrayPush.call(observedNodes, target);
+      }
+    } else {
+      observerToNodesMap.set(this, [target]);
+    }
+    return originalObserve.call(this, target, options);
+  }
+  function patchedTakeRecords() {
+    return filterMutationRecords(originalTakeRecords.call(this), this);
+  }
+  PatchedMutationObserver.prototype = OriginalMutationObserver.prototype;
+  PatchedMutationObserver.prototype.disconnect = patchedDisconnect;
+  PatchedMutationObserver.prototype.observe = patchedObserve;
+  PatchedMutationObserver.prototype.takeRecords = patchedTakeRecords;
+  defineProperty(window, "MutationObserver", {
+    value: PatchedMutationObserver,
+    configurable: true,
+    writable: true
+  });
+  function patchedAddEventListener(type, listener, optionsOrCapture) {
+    if (isSyntheticShadowHost(this)) {
+      return addCustomElementEventListener.apply(this, arguments);
+    }
+    if (arguments.length < 2) {
+      const args = ArraySlice.call(arguments);
+      if (args.length > 1) {
+        args[1] = getEventListenerWrapper(args[1]);
+      }
+      return addEventListener2.apply(this, args);
+    }
+    const wrappedListener = getEventListenerWrapper(listener);
+    return addEventListener2.call(this, type, wrappedListener, optionsOrCapture);
+  }
+  function patchedRemoveEventListener(_type, _listener, _optionsOrCapture) {
+    if (isSyntheticShadowHost(this)) {
+      return removeCustomElementEventListener.apply(this, arguments);
+    }
+    const args = ArraySlice.call(arguments);
+    if (arguments.length > 1) {
+      args[1] = getEventListenerWrapper(args[1]);
+    }
+    removeEventListener2.apply(this, args);
+    removeEventListener2.apply(this, arguments);
+  }
+  defineProperties(eventTargetPrototype, {
+    addEventListener: {
+      value: patchedAddEventListener,
+      enumerable: true,
+      writable: true,
+      configurable: true
+    },
+    removeEventListener: {
+      value: patchedRemoveEventListener,
+      enumerable: true,
+      writable: true,
+      configurable: true
+    }
+  });
+  function patchedCurrentTargetGetter() {
+    const currentTarget = eventCurrentTargetGetter.call(this);
+    if (isNull(currentTarget)) {
+      return null;
+    }
+    if (eventToContextMap.get(this) === 1) {
+      return getShadowRoot(currentTarget);
+    }
+    return currentTarget;
+  }
+  function patchedTargetGetter() {
+    const originalTarget = eventTargetGetter.call(this);
+    if (!(originalTarget instanceof _Node)) {
+      return originalTarget;
+    }
+    const doc = getOwnerDocument(originalTarget);
+    const composedPath2 = pathComposer(originalTarget, this.composed);
+    const originalCurrentTarget = eventCurrentTargetGetter.call(this);
+    if (!(originalCurrentTarget instanceof _Node)) {
+      if (isNull(originalCurrentTarget) && isUndefined(getNodeOwnerKey(originalTarget))) {
+        return originalTarget;
+      }
+      return retarget(doc, composedPath2);
+    } else if (originalCurrentTarget === doc || originalCurrentTarget === doc.body) {
+      if (isUndefined(getNodeOwnerKey(originalTarget))) {
+        return originalTarget;
+      }
+      return retarget(doc, composedPath2);
+    }
+    let actualCurrentTarget = originalCurrentTarget;
+    let actualPath = composedPath2;
+    if (isSyntheticShadowHost(originalCurrentTarget)) {
+      const context = eventToContextMap.get(this);
+      if (context === 1) {
+        actualCurrentTarget = getShadowRoot(originalCurrentTarget);
+      }
+    }
+    if (isSyntheticShadowHost(originalTarget) && eventToShadowRootMap.has(this)) {
+      actualPath = pathComposer(getShadowRoot(originalTarget), this.composed);
+    }
+    return retarget(actualCurrentTarget, actualPath);
+  }
+  function patchedComposedPathValue() {
+    const originalTarget = eventTargetGetter.call(this);
+    if (!(originalTarget instanceof _Node)) {
+      return [];
+    }
+    const hasShadowRoot = Boolean(originalTarget.shadowRoot);
+    const hasSyntheticShadowRootAttached = hasInternalSlot(originalTarget);
+    if (hasShadowRoot && !hasSyntheticShadowRootAttached) {
+      return composedPath.call(this);
+    }
+    const originalCurrentTarget = eventCurrentTargetGetter.call(this);
+    if (isNull(originalCurrentTarget)) {
+      return [];
+    }
+    let actualTarget = originalTarget;
+    if (isSyntheticShadowHost(originalTarget) && eventToShadowRootMap.has(this)) {
+      actualTarget = getShadowRoot(originalTarget);
+    }
+    return pathComposer(actualTarget, this.composed);
+  }
+  defineProperties(Event.prototype, {
+    target: {
+      get: patchedTargetGetter,
+      enumerable: true,
+      configurable: true
+    },
+    currentTarget: {
+      get: patchedCurrentTargetGetter,
+      enumerable: true,
+      configurable: true
+    },
+    composedPath: {
+      value: patchedComposedPathValue,
+      writable: true,
+      enumerable: true,
+      configurable: true
+    },
+    srcElement: {
+      get: patchedTargetGetter,
+      enumerable: true,
+      configurable: true
+    },
+    path: {
+      get: patchedComposedPathValue,
+      enumerable: true,
+      configurable: true
+    }
+  });
+  function retargetRelatedTarget(Ctor) {
+    const relatedTargetGetter = getOwnPropertyDescriptor(Ctor.prototype, "relatedTarget").get;
+    defineProperty(Ctor.prototype, "relatedTarget", {
+      get() {
+        const relatedTarget = relatedTargetGetter.call(this);
+        if (isNull(relatedTarget)) {
+          return null;
+        }
+        if (!(relatedTarget instanceof _Node) || !isNodeShadowed(relatedTarget)) {
+          return relatedTarget;
+        }
+        let pointOfReference = eventCurrentTargetGetter.call(this);
+        if (isNull(pointOfReference)) {
+          pointOfReference = getOwnerDocument(relatedTarget);
+        }
+        return retarget(pointOfReference, pathComposer(relatedTarget, true));
+      },
+      enumerable: true,
+      configurable: true
+    });
+  }
+  retargetRelatedTarget(FocusEvent);
+  retargetRelatedTarget(MouseEvent);
+  const assignedSlotGetter = hasOwnProperty.call(Text.prototype, "assignedSlot") ? getOwnPropertyDescriptor(Text.prototype, "assignedSlot").get : () => null;
+  let observer;
+  const observerConfig = {
+    childList: true
+  };
+  const SlotChangeKey = new WeakMap();
+  function initSlotObserver() {
+    return new MO((mutations) => {
+      const slots = [];
+      forEach.call(mutations, (mutation) => {
+        if (true) {
+          assert.invariant(mutation.type === "childList", `Invalid mutation type: ${mutation.type}. This mutation handler for slots should only handle "childList" mutations.`);
+        }
+        const {
+          target: slot
+        } = mutation;
+        if (ArrayIndexOf.call(slots, slot) === -1) {
+          ArrayPush.call(slots, slot);
+          dispatchEvent.call(slot, new CustomEvent("slotchange"));
+        }
+      });
+    });
+  }
+  function getFilteredSlotFlattenNodes(slot) {
+    const childNodes = arrayFromCollection(childNodesGetter.call(slot));
+    return ArrayReduce.call(childNodes, (seed, child) => {
+      if (child instanceof Element && isSlotElement(child)) {
+        ArrayPush.apply(seed, getFilteredSlotFlattenNodes(child));
+      } else {
+        ArrayPush.call(seed, child);
+      }
+      return seed;
+    }, []);
+  }
+  function assignedSlotGetterPatched() {
+    const parentNode = parentNodeGetter.call(this);
+    if (parentNode instanceof Element) {
+      const sr = shadowRootGetter.call(parentNode);
+      if (isInstanceOfNativeShadowRoot(sr)) {
+        if (this instanceof Text) {
+          return assignedSlotGetter.call(this);
+        }
+        return assignedSlotGetter$1.call(this);
+      }
+    }
+    if (!isNull(parentNode) && isSlotElement(parentNode) && getNodeOwnerKey(parentNode) !== getNodeOwnerKey(this)) {
+      return parentNode;
+    }
+    return null;
+  }
+  defineProperties(HTMLSlotElement.prototype, {
+    addEventListener: {
+      value(type, listener, options) {
+        HTMLElement.prototype.addEventListener.call(this, type, listener, options);
+        if (type === "slotchange" && !SlotChangeKey.get(this)) {
+          SlotChangeKey.set(this, true);
+          if (!observer) {
+            observer = initSlotObserver();
+          }
+          MutationObserverObserve.call(observer, this, observerConfig);
+        }
+      },
+      writable: true,
+      enumerable: true,
+      configurable: true
+    },
+    assignedElements: {
+      value(options) {
+        if (isNodeShadowed(this)) {
+          const flatten = !isUndefined(options) && isTrue(options.flatten);
+          const nodes = flatten ? getFilteredSlotFlattenNodes(this) : getFilteredSlotAssignedNodes(this);
+          return ArrayFilter.call(nodes, (node) => node instanceof Element);
+        } else {
+          return assignedElements.apply(this, ArraySlice.call(arguments));
+        }
+      },
+      writable: true,
+      enumerable: true,
+      configurable: true
+    },
+    assignedNodes: {
+      value(options) {
+        if (isNodeShadowed(this)) {
+          const flatten = !isUndefined(options) && isTrue(options.flatten);
+          return flatten ? getFilteredSlotFlattenNodes(this) : getFilteredSlotAssignedNodes(this);
+        } else {
+          return assignedNodes.apply(this, ArraySlice.call(arguments));
+        }
+      },
+      writable: true,
+      enumerable: true,
+      configurable: true
+    },
+    name: {
+      get() {
+        const name = getAttribute.call(this, "name");
+        return isNull(name) ? "" : name;
+      },
+      set(value) {
+        setAttribute.call(this, "name", value);
+      },
+      enumerable: true,
+      configurable: true
+    },
+    childNodes: {
+      get() {
+        if (isNodeShadowed(this)) {
+          const owner = getNodeOwner(this);
+          const childNodes = isNull(owner) ? [] : getAllMatches(owner, getFilteredChildNodes(this));
+          return createStaticNodeList(childNodes);
+        }
+        return childNodesGetter.call(this);
+      },
+      enumerable: true,
+      configurable: true
+    }
+  });
+  defineProperties(Text.prototype, {
+    assignedSlot: {
+      get: assignedSlotGetterPatched,
+      enumerable: true,
+      configurable: true
+    }
+  });
+  function getNonPatchedFilteredArrayOfNodes(context, unfilteredNodes) {
+    let filtered;
+    const ownerKey = getNodeOwnerKey(context);
+    if (!isUndefined(ownerKey)) {
+      if (isSyntheticShadowHost(context)) {
+        const owner = getNodeOwner(context);
+        if (isNull(owner)) {
+          filtered = [];
+        } else if (getNodeKey(context)) {
+          filtered = getAllSlottedMatches(context, unfilteredNodes);
+        } else {
+          filtered = getAllMatches(owner, unfilteredNodes);
+        }
+      } else {
+        filtered = ArrayFilter.call(unfilteredNodes, (elm) => getNodeNearestOwnerKey(elm) === ownerKey);
+      }
+    } else if (context instanceof HTMLBodyElement) {
+      filtered = ArrayFilter.call(unfilteredNodes, (elm) => isUndefined(getNodeOwnerKey(elm)) || isGlobalPatchingSkipped(context));
+    } else {
+      filtered = ArraySlice.call(unfilteredNodes);
+    }
+    return filtered;
+  }
+  function innerHTMLGetterPatched() {
+    const childNodes = getInternalChildNodes(this);
+    let innerHTML = "";
+    for (let i = 0, len = childNodes.length; i < len; i += 1) {
+      innerHTML += getOuterHTML(childNodes[i]);
+    }
+    return innerHTML;
+  }
+  function outerHTMLGetterPatched() {
+    return getOuterHTML(this);
+  }
+  function attachShadowPatched(options) {
+    if (options[KEY__SYNTHETIC_MODE]) {
+      return attachShadow(this, options);
+    }
+    return attachShadow$1.call(this, options);
+  }
+  function shadowRootGetterPatched() {
+    if (isSyntheticShadowHost(this)) {
+      const shadow = getShadowRoot(this);
+      if (shadow.mode === "open") {
+        return shadow;
+      }
+    }
+    return shadowRootGetter.call(this);
+  }
+  function childrenGetterPatched() {
+    const owner = getNodeOwner(this);
+    const childNodes = isNull(owner) ? [] : getAllMatches(owner, getFilteredChildNodes(this));
+    return createStaticHTMLCollection(ArrayFilter.call(childNodes, (node) => node instanceof Element));
+  }
+  function childElementCountGetterPatched() {
+    return this.children.length;
+  }
+  function firstElementChildGetterPatched() {
+    return this.children[0] || null;
+  }
+  function lastElementChildGetterPatched() {
+    const {
+      children
+    } = this;
+    return children.item(children.length - 1) || null;
+  }
+  defineProperties(Element.prototype, {
+    innerHTML: {
+      get() {
+        if (isNodeShadowed(this) || isSyntheticShadowHost(this)) {
+          return innerHTMLGetterPatched.call(this);
+        }
+        return innerHTMLGetter.call(this);
+      },
+      set(v) {
+        innerHTMLSetter.call(this, v);
+      },
+      enumerable: true,
+      configurable: true
+    },
+    outerHTML: {
+      get() {
+        if (isNodeShadowed(this) || isSyntheticShadowHost(this)) {
+          return outerHTMLGetterPatched.call(this);
+        }
+        return outerHTMLGetter.call(this);
+      },
+      set(v) {
+        outerHTMLSetter.call(this, v);
+      },
+      enumerable: true,
+      configurable: true
+    },
+    attachShadow: {
+      value: attachShadowPatched,
+      enumerable: true,
+      writable: true,
+      configurable: true
+    },
+    shadowRoot: {
+      get: shadowRootGetterPatched,
+      enumerable: true,
+      configurable: true
+    },
+    children: {
+      get() {
+        if (hasMountedChildren(this)) {
+          return childrenGetterPatched.call(this);
+        }
+        return childrenGetter.call(this);
+      },
+      enumerable: true,
+      configurable: true
+    },
+    childElementCount: {
+      get() {
+        if (hasMountedChildren(this)) {
+          return childElementCountGetterPatched.call(this);
+        }
+        return childElementCountGetter.call(this);
+      },
+      enumerable: true,
+      configurable: true
+    },
+    firstElementChild: {
+      get() {
+        if (hasMountedChildren(this)) {
+          return firstElementChildGetterPatched.call(this);
+        }
+        return firstElementChildGetter.call(this);
+      },
+      enumerable: true,
+      configurable: true
+    },
+    lastElementChild: {
+      get() {
+        if (hasMountedChildren(this)) {
+          return lastElementChildGetterPatched.call(this);
+        }
+        return lastElementChildGetter.call(this);
+      },
+      enumerable: true,
+      configurable: true
+    },
+    assignedSlot: {
+      get: assignedSlotGetterPatched,
+      enumerable: true,
+      configurable: true
+    }
+  });
+  if (hasOwnProperty.call(HTMLElement.prototype, "innerHTML")) {
+    defineProperty(HTMLElement.prototype, "innerHTML", getOwnPropertyDescriptor(Element.prototype, "innerHTML"));
+  }
+  if (hasOwnProperty.call(HTMLElement.prototype, "outerHTML")) {
+    defineProperty(HTMLElement.prototype, "outerHTML", getOwnPropertyDescriptor(Element.prototype, "outerHTML"));
+  }
+  if (hasOwnProperty.call(HTMLElement.prototype, "children")) {
+    defineProperty(HTMLElement.prototype, "children", getOwnPropertyDescriptor(Element.prototype, "children"));
+  }
+  function querySelectorPatched() {
+    const nodeList = arrayFromCollection(querySelectorAll$1.apply(this, ArraySlice.call(arguments)));
+    if (isSyntheticShadowHost(this)) {
+      const owner = getNodeOwner(this);
+      if (!isUndefined(getNodeKey(this))) {
+        return getFirstSlottedMatch(this, nodeList);
+      } else if (isNull(owner)) {
+        return null;
+      } else {
+        return getFirstMatch(owner, nodeList);
+      }
+    } else if (isNodeShadowed(this)) {
+      const ownerKey = getNodeOwnerKey(this);
+      if (!isUndefined(ownerKey)) {
+        const elm = ArrayFind.call(nodeList, (elm2) => getNodeNearestOwnerKey(elm2) === ownerKey);
+        return isUndefined(elm) ? null : elm;
+      } else {
+        return nodeList.length === 0 ? null : nodeList[0];
+      }
+    } else {
+      if (!(this instanceof HTMLBodyElement)) {
+        const elm2 = nodeList[0];
+        return isUndefined(elm2) ? null : elm2;
+      }
+      const elm = ArrayFind.call(nodeList, (elm2) => isUndefined(getNodeOwnerKey(elm2)) || isGlobalPatchingSkipped(this));
+      return isUndefined(elm) ? null : elm;
+    }
+  }
+  function getFilteredArrayOfNodes(context, unfilteredNodes) {
+    let filtered;
+    if (isSyntheticShadowHost(context)) {
+      const owner = getNodeOwner(context);
+      if (!isUndefined(getNodeKey(context))) {
+        filtered = getAllSlottedMatches(context, unfilteredNodes);
+      } else if (isNull(owner)) {
+        filtered = [];
+      } else {
+        filtered = getAllMatches(owner, unfilteredNodes);
+      }
+    } else if (isNodeShadowed(context)) {
+      const ownerKey = getNodeOwnerKey(context);
+      if (!isUndefined(ownerKey)) {
+        filtered = ArrayFilter.call(unfilteredNodes, (elm) => getNodeNearestOwnerKey(elm) === ownerKey);
+      } else {
+        filtered = ArraySlice.call(unfilteredNodes);
+      }
+    } else {
+      if (context instanceof HTMLBodyElement) {
+        filtered = ArrayFilter.call(unfilteredNodes, (elm) => isUndefined(getNodeOwnerKey(elm)) || isGlobalPatchingSkipped(context));
+      } else {
+        filtered = ArraySlice.call(unfilteredNodes);
+      }
+    }
+    return filtered;
+  }
+  defineProperties(Element.prototype, {
+    querySelector: {
+      value: querySelectorPatched,
+      writable: true,
+      enumerable: true,
+      configurable: true
+    },
+    querySelectorAll: {
+      value() {
+        const nodeList = arrayFromCollection(querySelectorAll$1.apply(this, ArraySlice.call(arguments)));
+        const filteredResults = getFilteredArrayOfNodes(this, nodeList);
+        return createStaticNodeList(filteredResults);
+      },
+      writable: true,
+      enumerable: true,
+      configurable: true
+    }
+  });
+  if (true) {
+    defineProperties(Element.prototype, {
+      getElementsByClassName: {
+        value() {
+          const elements = arrayFromCollection(getElementsByClassName$1.apply(this, ArraySlice.call(arguments)));
+          return createStaticHTMLCollection(getNonPatchedFilteredArrayOfNodes(this, elements));
+        },
+        writable: true,
+        enumerable: true,
+        configurable: true
+      },
+      getElementsByTagName: {
+        value() {
+          const elements = arrayFromCollection(getElementsByTagName$1.apply(this, ArraySlice.call(arguments)));
+          return createStaticHTMLCollection(getNonPatchedFilteredArrayOfNodes(this, elements));
+        },
+        writable: true,
+        enumerable: true,
+        configurable: true
+      },
+      getElementsByTagNameNS: {
+        value() {
+          const elements = arrayFromCollection(getElementsByTagNameNS$1.apply(this, ArraySlice.call(arguments)));
+          return createStaticHTMLCollection(getNonPatchedFilteredArrayOfNodes(this, elements));
+        },
+        writable: true,
+        enumerable: true,
+        configurable: true
+      }
+    });
+  }
+  if (hasOwnProperty.call(HTMLElement.prototype, "getElementsByClassName")) {
+    defineProperty(HTMLElement.prototype, "getElementsByClassName", getOwnPropertyDescriptor(Element.prototype, "getElementsByClassName"));
+  }
+  const FocusableSelector = `
+    [contenteditable],
+    [tabindex],
+    a[href],
+    area[href],
+    audio[controls],
+    button,
+    iframe,
+    input,
+    select,
+    textarea,
+    video[controls]
+`;
+  const formElementTagNames = new Set(["BUTTON", "INPUT", "SELECT", "TEXTAREA"]);
+  function filterSequentiallyFocusableElements(elements) {
+    return elements.filter((element) => {
+      if (hasAttribute.call(element, "tabindex")) {
+        return getAttribute.call(element, "tabindex") === "0";
+      }
+      if (formElementTagNames.has(tagNameGetter.call(element))) {
+        return !hasAttribute.call(element, "disabled");
+      }
+      return true;
+    });
+  }
+  const DidAddMouseEventListeners = new WeakMap();
+  function isVisible(element) {
+    const {
+      width,
+      height
+    } = getBoundingClientRect.call(element);
+    const noZeroSize = width > 0 || height > 0;
+    const isAreaElement = element.tagName === "AREA";
+    return (noZeroSize || isAreaElement) && getComputedStyle(element).visibility !== "hidden";
+  }
+  function isTabbable(element) {
+    if (isSyntheticShadowHost(element) && isDelegatingFocus(element)) {
+      return false;
+    }
+    return matches.call(element, FocusableSelector) && isVisible(element);
+  }
+  function hostElementFocus() {
+    const _rootNode = this.getRootNode();
+    if (_rootNode === this) {
+      const focusable = querySelector.call(this, FocusableSelector);
+      if (!isNull(focusable)) {
+        focusable.focus.apply(focusable, arguments);
+      }
+      return;
+    }
+    const rootNode = _rootNode;
+    if (rootNode.activeElement === this) {
+      return;
+    }
+    const focusables = arrayFromCollection(querySelectorAll$1.call(this, FocusableSelector));
+    let didFocus = false;
+    while (!didFocus && focusables.length !== 0) {
+      const focusable = focusables.shift();
+      focusable.focus.apply(focusable, arguments);
+      const currentRootNode = focusable.getRootNode();
+      didFocus = currentRootNode.activeElement === focusable;
+    }
+  }
+  function getTabbableSegments(host) {
+    const doc = getOwnerDocument(host);
+    const all = filterSequentiallyFocusableElements(arrayFromCollection(querySelectorAll.call(doc, FocusableSelector)));
+    const inner = filterSequentiallyFocusableElements(arrayFromCollection(querySelectorAll$1.call(host, FocusableSelector)));
+    if (true) {
+      assert.invariant(getAttribute.call(host, "tabindex") === "-1" || isDelegatingFocus(host), `The focusin event is only relevant when the tabIndex property is -1 on the host.`);
+    }
+    const firstChild = inner[0];
+    const lastChild = inner[inner.length - 1];
+    const hostIndex = ArrayIndexOf.call(all, host);
+    const firstChildIndex = hostIndex > -1 ? hostIndex : ArrayIndexOf.call(all, firstChild);
+    const lastChildIndex = inner.length === 0 ? firstChildIndex + 1 : ArrayIndexOf.call(all, lastChild) + 1;
+    const prev = ArraySlice.call(all, 0, firstChildIndex);
+    const next = ArraySlice.call(all, lastChildIndex);
+    return {
+      prev,
+      inner,
+      next
+    };
+  }
+  function getActiveElement(host) {
+    const doc = getOwnerDocument(host);
+    const activeElement = DocumentPrototypeActiveElement.call(doc);
+    if (isNull(activeElement)) {
+      return activeElement;
+    }
+    return (compareDocumentPosition.call(host, activeElement) & DOCUMENT_POSITION_CONTAINED_BY) !== 0 ? activeElement : null;
+  }
+  function relatedTargetPosition(host, relatedTarget) {
+    const pos = compareDocumentPosition.call(host, relatedTarget);
+    if (pos & DOCUMENT_POSITION_CONTAINED_BY) {
+      return 0;
+    } else if (pos & DOCUMENT_POSITION_PRECEDING) {
+      return 1;
+    } else if (pos & DOCUMENT_POSITION_FOLLOWING) {
+      return 2;
+    }
+    return -1;
+  }
+  function muteEvent(event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  function muteFocusEventsDuringExecution(win, func) {
+    windowAddEventListener.call(win, "focusin", muteEvent, true);
+    windowAddEventListener.call(win, "focusout", muteEvent, true);
+    func();
+    windowRemoveEventListener.call(win, "focusin", muteEvent, true);
+    windowRemoveEventListener.call(win, "focusout", muteEvent, true);
+  }
+  function focusOnNextOrBlur(segment, target, relatedTarget) {
+    const win = getOwnerWindow(relatedTarget);
+    const next = getNextTabbable(segment, relatedTarget);
+    if (isNull(next)) {
+      muteFocusEventsDuringExecution(win, () => {
+        target.blur();
+      });
+    } else {
+      muteFocusEventsDuringExecution(win, () => {
+        next.focus();
+      });
+    }
+  }
+  let letBrowserHandleFocus = false;
+  function disableKeyboardFocusNavigationRoutines() {
+    letBrowserHandleFocus = true;
+  }
+  function enableKeyboardFocusNavigationRoutines() {
+    letBrowserHandleFocus = false;
+  }
+  function isKeyboardFocusNavigationRoutineEnabled() {
+    return !letBrowserHandleFocus;
+  }
+  function skipHostHandler(event) {
+    if (letBrowserHandleFocus) {
+      return;
+    }
+    const host = eventCurrentTargetGetter.call(event);
+    const target = eventTargetGetter.call(event);
+    if (host !== target) {
+      return;
+    }
+    const relatedTarget = focusEventRelatedTargetGetter.call(event);
+    if (isNull(relatedTarget)) {
+      return;
+    }
+    const segments = getTabbableSegments(host);
+    const position = relatedTargetPosition(host, relatedTarget);
+    if (position === 1) {
+      const findTabbableElms = isTabbableFrom.bind(null, host.getRootNode());
+      const first = ArrayFind.call(segments.inner, findTabbableElms);
+      if (!isUndefined(first)) {
+        const win = getOwnerWindow(first);
+        muteFocusEventsDuringExecution(win, () => {
+          first.focus();
+        });
+      } else {
+        focusOnNextOrBlur(segments.next, target, relatedTarget);
+      }
+    } else if (host === target) {
+      focusOnNextOrBlur(ArrayReverse.call(segments.prev), target, relatedTarget);
+    }
+  }
+  function skipShadowHandler(event) {
+    if (letBrowserHandleFocus) {
+      return;
+    }
+    const relatedTarget = focusEventRelatedTargetGetter.call(event);
+    if (isNull(relatedTarget)) {
+      return;
+    }
+    const host = eventCurrentTargetGetter.call(event);
+    const segments = getTabbableSegments(host);
+    if (ArrayIndexOf.call(segments.inner, relatedTarget) !== -1) {
+      return;
+    }
+    const target = eventTargetGetter.call(event);
+    const position = relatedTargetPosition(host, relatedTarget);
+    if (position === 1) {
+      focusOnNextOrBlur(segments.next, target, relatedTarget);
+    }
+    if (position === 2) {
+      focusOnNextOrBlur(ArrayReverse.call(segments.prev), target, relatedTarget);
+    }
+  }
+  function isTabbableFrom(fromRoot, toElm) {
+    if (!isTabbable(toElm)) {
+      return false;
+    }
+    const ownerDocument = getOwnerDocument(toElm);
+    let root = toElm.getRootNode();
+    while (root !== ownerDocument && root !== fromRoot) {
+      const sr = root;
+      const host = sr.host;
+      if (getAttribute.call(host, "tabindex") === "-1") {
+        return false;
+      }
+      root = host && host.getRootNode();
+    }
+    return true;
+  }
+  function getNextTabbable(tabbables, relatedTarget) {
+    const len = tabbables.length;
+    if (len > 0) {
+      for (let i = 0; i < len; i += 1) {
+        const next = tabbables[i];
+        if (isTabbableFrom(relatedTarget.getRootNode(), next)) {
+          return next;
+        }
+      }
+    }
+    return null;
+  }
+  function handleFocus(elm) {
+    if (true) {
+      assert.invariant(isDelegatingFocus(elm), `Invalid attempt to handle focus event for ${toString(elm)}. ${toString(elm)} should have delegates focus true, but is not delegating focus`);
+    }
+    bindDocumentMousedownMouseupHandlers(elm);
+    ignoreFocusIn(elm);
+    addEventListener2.call(elm, "focusin", skipHostHandler, true);
+  }
+  function ignoreFocus(elm) {
+    removeEventListener2.call(elm, "focusin", skipHostHandler, true);
+  }
+  function bindDocumentMousedownMouseupHandlers(elm) {
+    const ownerDocument = getOwnerDocument(elm);
+    if (!DidAddMouseEventListeners.get(ownerDocument)) {
+      DidAddMouseEventListeners.set(ownerDocument, true);
+      addEventListener2.call(ownerDocument, "mousedown", disableKeyboardFocusNavigationRoutines, true);
+      addEventListener2.call(ownerDocument, "mouseup", () => {
+        setTimeout(enableKeyboardFocusNavigationRoutines);
+      }, true);
+      addEventListener2.call(ownerDocument, "dragstart", enableKeyboardFocusNavigationRoutines, true);
+    }
+  }
+  function handleFocusIn(elm) {
+    if (true) {
+      assert.invariant(tabIndexGetter.call(elm) === -1, `Invalid attempt to handle focus in  ${toString(elm)}. ${toString(elm)} should have tabIndex -1, but has tabIndex ${tabIndexGetter.call(elm)}`);
+    }
+    bindDocumentMousedownMouseupHandlers(elm);
+    ignoreFocus(elm);
+    addEventListener2.call(elm, "focusin", skipShadowHandler, true);
+  }
+  function ignoreFocusIn(elm) {
+    removeEventListener2.call(elm, "focusin", skipShadowHandler, true);
+  }
+  const {
+    blur,
+    focus
+  } = HTMLElement.prototype;
+  function tabIndexGetterPatched() {
+    if (isDelegatingFocus(this) && isFalse(hasAttribute.call(this, "tabindex"))) {
+      return 0;
+    }
+    return tabIndexGetter.call(this);
+  }
+  function tabIndexSetterPatched(value) {
+    const delegatesFocus = isDelegatingFocus(this);
+    const prevValue = tabIndexGetter.call(this);
+    const prevHasAttr = hasAttribute.call(this, "tabindex");
+    tabIndexSetter.call(this, value);
+    const currValue = tabIndexGetter.call(this);
+    const currHasAttr = hasAttribute.call(this, "tabindex");
+    const didValueChange = prevValue !== currValue;
+    if (prevHasAttr && (didValueChange || isFalse(currHasAttr))) {
+      if (prevValue === -1) {
+        ignoreFocusIn(this);
+      }
+      if (prevValue === 0 && delegatesFocus) {
+        ignoreFocus(this);
+      }
+    }
+    if (isFalse(currHasAttr)) {
+      return;
+    }
+    if (prevHasAttr && currHasAttr && isFalse(didValueChange)) {
+      return;
+    }
+    if (currValue === -1) {
+      handleFocusIn(this);
+    }
+    if (currValue === 0 && delegatesFocus) {
+      handleFocus(this);
+    }
+  }
+  function blurPatched() {
+    if (isDelegatingFocus(this)) {
+      const currentActiveElement = getActiveElement(this);
+      if (!isNull(currentActiveElement)) {
+        currentActiveElement.blur();
+        return;
+      }
+    }
+    return blur.call(this);
+  }
+  function focusPatched() {
+    const originallyEnabled = isKeyboardFocusNavigationRoutineEnabled();
+    if (originallyEnabled) {
+      disableKeyboardFocusNavigationRoutines();
+    }
+    if (isSyntheticShadowHost(this) && isDelegatingFocus(this)) {
+      hostElementFocus.call(this);
+      return;
+    }
+    focus.apply(this, arguments);
+    if (originallyEnabled) {
+      enableKeyboardFocusNavigationRoutines();
+    }
+  }
+  defineProperties(HTMLElement.prototype, {
+    tabIndex: {
+      get() {
+        if (isSyntheticShadowHost(this)) {
+          return tabIndexGetterPatched.call(this);
+        }
+        return tabIndexGetter.call(this);
+      },
+      set(v) {
+        if (isSyntheticShadowHost(this)) {
+          return tabIndexSetterPatched.call(this, v);
+        }
+        return tabIndexSetter.call(this, v);
+      },
+      enumerable: true,
+      configurable: true
+    },
+    blur: {
+      value() {
+        if (isSyntheticShadowHost(this)) {
+          return blurPatched.call(this);
+        }
+        blur.call(this);
+      },
+      enumerable: true,
+      writable: true,
+      configurable: true
+    },
+    focus: {
+      value() {
+        focusPatched.apply(this, arguments);
+      },
+      enumerable: true,
+      writable: true,
+      configurable: true
+    }
+  });
+  if (innerTextGetter !== null && innerTextSetter !== null) {
+    defineProperty(HTMLElement.prototype, "innerText", {
+      get() {
+        return innerTextGetter.call(this);
+      },
+      set(v) {
+        innerTextSetter.call(this, v);
+      },
+      enumerable: true,
+      configurable: true
+    });
+  }
+  if (outerTextGetter !== null && outerTextSetter !== null) {
+    defineProperty(HTMLElement.prototype, "outerText", {
+      get() {
+        return outerTextGetter.call(this);
+      },
+      set(v) {
+        outerTextSetter.call(this, v);
+      },
+      enumerable: true,
+      configurable: true
+    });
+  }
+  function getShadowToken(node) {
+    return node[KEY__SHADOW_TOKEN];
+  }
+  function setShadowToken(node, shadowToken) {
+    node[KEY__SHADOW_TOKEN] = shadowToken;
+  }
+  defineProperty(Element.prototype, KEY__SHADOW_TOKEN, {
+    set(shadowToken) {
+      const oldShadowToken = this[KEY__SHADOW_TOKEN_PRIVATE];
+      if (!isUndefined(oldShadowToken) && oldShadowToken !== shadowToken) {
+        removeAttribute.call(this, oldShadowToken);
+      }
+      if (!isUndefined(shadowToken)) {
+        setAttribute.call(this, shadowToken, "");
+      }
+      this[KEY__SHADOW_TOKEN_PRIVATE] = shadowToken;
+    },
+    get() {
+      return this[KEY__SHADOW_TOKEN_PRIVATE];
+    },
+    configurable: true
+  });
+  function recursivelySetShadowResolver(node, fn) {
+    node[KEY__SHADOW_RESOLVER] = fn;
+    const childNodes = childNodesGetter.call(node);
+    for (let i = 0, n = childNodes.length; i < n; i++) {
+      recursivelySetShadowResolver(childNodes[i], fn);
+    }
+  }
+  defineProperty(Element.prototype, KEY__SHADOW_STATIC, {
+    set(v) {
+      if (v) {
+        const fn = this[KEY__SHADOW_RESOLVER];
+        recursivelySetShadowResolver(this, fn);
+      }
+      this[KEY__SHADOW_STATIC_PRIVATE] = v;
+    },
+    get() {
+      return this[KEY__SHADOW_STATIC_PRIVATE];
+    },
+    configurable: true
+  });
+  function getLegacyShadowToken(node) {
+    return node[KEY__LEGACY_SHADOW_TOKEN];
+  }
+  function setLegacyShadowToken(node, shadowToken) {
+    node[KEY__LEGACY_SHADOW_TOKEN] = shadowToken;
+  }
+  defineProperty(Element.prototype, KEY__LEGACY_SHADOW_TOKEN, {
+    set(shadowToken) {
+      const oldShadowToken = this[KEY__LEGACY_SHADOW_TOKEN_PRIVATE];
+      if (!isUndefined(oldShadowToken) && oldShadowToken !== shadowToken) {
+        removeAttribute.call(this, oldShadowToken);
+      }
+      if (!isUndefined(shadowToken)) {
+        setAttribute.call(this, shadowToken, "");
+      }
+      this[KEY__LEGACY_SHADOW_TOKEN_PRIVATE] = shadowToken;
+    },
+    get() {
+      return this[KEY__LEGACY_SHADOW_TOKEN_PRIVATE];
+    },
+    configurable: true
+  });
+  const DomManualPrivateKey = "$$DomManualKey$$";
+  const DocumentResolverFn = function() {
+  };
+  let portalObserver;
+  const portalObserverConfig = {
+    childList: true
+  };
+  function adoptChildNode(node, fn, shadowToken, legacyShadowToken) {
+    const previousNodeShadowResolver = getShadowRootResolver(node);
+    if (previousNodeShadowResolver === fn) {
+      return;
+    }
+    setShadowRootResolver(node, fn);
+    if (node instanceof Element) {
+      setShadowToken(node, shadowToken);
+      if (lwcRuntimeFlags.ENABLE_LEGACY_SCOPE_TOKENS) {
+        setLegacyShadowToken(node, legacyShadowToken);
+      }
+      if (isSyntheticShadowHost(node)) {
+        return;
+      }
+      if (isUndefined(previousNodeShadowResolver)) {
+        MutationObserverObserve.call(portalObserver, node, portalObserverConfig);
+      }
+      const childNodes = childNodesGetter.call(node);
+      for (let i = 0, len = childNodes.length; i < len; i += 1) {
+        adoptChildNode(childNodes[i], fn, shadowToken, legacyShadowToken);
+      }
+    }
+  }
+  function initPortalObserver() {
+    return new MO((mutations) => {
+      forEach.call(mutations, (mutation) => {
+        const {
+          target: elm,
+          addedNodes,
+          removedNodes
+        } = mutation;
+        const fn = getShadowRootResolver(elm);
+        const shadowToken = getShadowToken(elm);
+        const legacyShadowToken = lwcRuntimeFlags.ENABLE_LEGACY_SCOPE_TOKENS ? getLegacyShadowToken(elm) : void 0;
+        for (let i = 0, len = removedNodes.length; i < len; i += 1) {
+          const node = removedNodes[i];
+          if (!(compareDocumentPosition.call(elm, node) & _Node.DOCUMENT_POSITION_CONTAINED_BY)) {
+            adoptChildNode(node, DocumentResolverFn, void 0, void 0);
+          }
+        }
+        for (let i = 0, len = addedNodes.length; i < len; i += 1) {
+          const node = addedNodes[i];
+          if (compareDocumentPosition.call(elm, node) & _Node.DOCUMENT_POSITION_CONTAINED_BY) {
+            adoptChildNode(node, fn, shadowToken, legacyShadowToken);
+          }
+        }
+      });
+    });
+  }
+  function markElementAsPortal(elm) {
+    if (isUndefined(portalObserver)) {
+      portalObserver = initPortalObserver();
+    }
+    if (isUndefined(getShadowRootResolver(elm))) {
+      throw new Error(`Invalid Element`);
+    }
+    MutationObserverObserve.call(portalObserver, elm, portalObserverConfig);
+  }
+  defineProperty(Element.prototype, "$domManual$", {
+    set(v) {
+      this[DomManualPrivateKey] = v;
+      if (isTrue(v)) {
+        markElementAsPortal(this);
+      }
+    },
+    get() {
+      return this[DomManualPrivateKey];
+    },
+    configurable: true
+  });
+});
+LWR.define("@lwc/synthetic-shadow", ["exports", "@lwc/synthetic-shadow/v/3_0_4"], function(e, m) {
+  e.default = m && typeof m == "object" && "default" in m ? m.default : m;
+  Object.keys(m).forEach(function(n) {
+    n === "default" || e.hasOwnProperty(n) || Object.defineProperty(e, n, {enumerable: true, get: function() {
+      return m[n];
+    }});
+  });
+});
+LWR.define("@lwrjs/app-service/communities_app/module/amd/v/0_10_10", ["lwr/loaderLegacy/v/0_10_10", "@lwc/synthetic-shadow/v/3_0_4", "webruntime/hook/v/1_66_439-246_0", "webruntime/o11yHook/v/1_66_439-246_0", "webruntime/dynamicImportResourceHook/v/1_66_439-246_0", "webruntime/appUserLoaderHook/v/1_66_439-246_0", "lwr/init/v/0_10_10"], function(_0_10_10, _3_0_4, loaderService_webruntime_hook, loaderService_webruntime_o11yHook, loaderService_webruntime_dynamicImportResourceHook, loaderService_webruntime_appUserLoaderHook, _0_10_10$1) {
+  "use strict";
+  function _interopDefaultLegacy(e) {
+    return e && typeof e === "object" && "default" in e ? e : {default: e};
+  }
+  var loaderService_webruntime_hook__default = /* @__PURE__ */ _interopDefaultLegacy(loaderService_webruntime_hook);
+  var loaderService_webruntime_o11yHook__default = /* @__PURE__ */ _interopDefaultLegacy(loaderService_webruntime_o11yHook);
+  var loaderService_webruntime_dynamicImportResourceHook__default = /* @__PURE__ */ _interopDefaultLegacy(loaderService_webruntime_dynamicImportResourceHook);
+  var loaderService_webruntime_appUserLoaderHook__default = /* @__PURE__ */ _interopDefaultLegacy(loaderService_webruntime_appUserLoaderHook);
+  loaderService_webruntime_hook__default["default"](_0_10_10.services);
+  loaderService_webruntime_o11yHook__default["default"](_0_10_10.services);
+  loaderService_webruntime_dynamicImportResourceHook__default["default"](_0_10_10.services);
+  loaderService_webruntime_appUserLoaderHook__default["default"](_0_10_10.services);
+  const clientBootstrapConfig = globalThis.LWR;
+  const {rootComponents, ssrProps} = clientBootstrapConfig;
+  Promise.all(rootComponents.map(async (rootSpecifier) => {
+    const element = _0_10_10$1.toKebabCase(rootSpecifier);
+    return _0_10_10.load(rootSpecifier, "@lwrjs/app-service/communities_app/module/amd/v/0_10_10").then(({default: Ctor}) => {
+      _0_10_10$1.init([[element, Ctor]], ssrProps);
+    });
+  }));
+  globalThis.LWR = Object.freeze({
+    define: globalThis.LWR.define
+  });
+});
+LWR.define("@lwrjs/app-service/communities_app/module/amd", ["exports", "@lwrjs/app-service/communities_app/module/amd/v/0_10_10"], function(e, m) {
+  e.default = m && typeof m == "object" && "default" in m ? m.default : m;
+  Object.keys(m).forEach(function(n) {
+    n === "default" || e.hasOwnProperty(n) || Object.defineProperty(e, n, {enumerable: true, get: function() {
+      return m[n];
+    }});
+  });
+});

@@ -1,0 +1,14 @@
+<aura:component 
+    controller="AuraController"
+    implements="flexipage:availableForAllPageTypes, forceCommunity:availableForAllPageTypes">
+    
+    <aura:handler name="init" action="{!c.doInit}" value="{!this}" />
+    <aura:attribute name="objs" type="sObject[]" description="the returned objects"/>
+    <div>I AM AURA</div>
+    <aura:iteration items="{!objs}" var="o">
+        <div>
+            <span>{!o.Id}</span>
+            <span>{!o.Name}</span>
+        </div>
+    </aura:iteration>    
+</aura:component>	

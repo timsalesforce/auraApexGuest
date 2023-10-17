@@ -1,0 +1,25 @@
+(function () {
+    'use strict';
+
+    /**
+     * This is compiled to the beginning of webruntime script using rollup banner in scripts/rollup.config.js
+     * Consumers can check the global flag isBrowserSupportedByWebruntime to see if the framework works
+     * for current browser the framework is running on
+     *
+     * For major browsers this will support:
+     * Chrome 54+
+     * Safari 11+
+     * Firefox 63+
+     * Edge 79+
+     */
+    function hasSupportedFeatures() {
+        // Filters out Safari versions < 11
+        const userTimingApi = 'performance' in window && 'mark' in window.performance;
+        // Filters out IE and most old browsers as web components are the primary functionality needed for webruntime
+        const customElements = 'customElements' in window;
+
+        return userTimingApi && customElements;
+    }
+    window.isBrowserSupportedByWebruntime = hasSupportedFeatures();
+
+})();
