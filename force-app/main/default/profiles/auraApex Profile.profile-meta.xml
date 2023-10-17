@@ -325,5 +325,5 @@
         <tab>standard-Account</tab>
         <visibility>Hidden</visibility>
     </tabVisibilities>
-    <userLicense>Guest User License</userLicense>
+    <userLicense>Salesforce</userLicense>
 </Profile>

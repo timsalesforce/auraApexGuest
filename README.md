@@ -1,18 +1,21 @@
-# Salesforce DX Project: Next Steps
+# W-14179000 - Query called in the Apex controller through LWC component behaving differently in Winter'24 Orgs
 
-Now that you’ve created a Salesforce DX project, what’s next? Here are some documentation resources to get you started.
+## Repro
+1. Clone this repository
+2. Create a scratch org
+3. Enable digital experiences (Setup -> Digitial Experiences -> Setup)
+4. Deploy to your scratch org
+5. Open the org
+6. Create one CustomObject1 object (switch to Sales App, the tab should be there)
+7. Go to the deployed site's builder (Setup -> Digital Experiences -> All Sites, click on Builder next to the site)
+8. Click on Settings, and then click on the Guest User Profile
+9. Add AuraController to the list of allowed Apex Classes
+10. Click on the Publish button in the top right (you have to publish to allow Guest Access)
+11. In an incognito window, load the site (copy the URL from the site list, clicking on it will not work, and copying the link address will not either. You have to physcially copy the URL with your mouse)
+12. Observe that 0 CustomObjec1 objects are returned to the aura component (see it on the screen)
+13. Now open an Account (create one if needed), and see the same Aura Component on the record page will show 1 object returned
 
-## How Do You Plan to Deploy Your Changes?
 
-Do you want to deploy a set of changes, or create a self-contained application? Choose a [development model](https://developer.salesforce.com/tools/vscode/en/user-guide/development-models).
+The object should be returned in the site too.  It is not returned because the wrong SecurityContext is pushed due to the name of the site (10kconnect), which matches a setup entity keyprefix, and SETUP_MODE is pushed instead.
 
-## Configure Your Salesforce DX Project
-
-The `sfdx-project.json` file contains useful configuration information for your project. See [Salesforce DX Project Configuration](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_ws_config.htm) in the _Salesforce DX Developer Guide_ for details about this file.
-
-## Read All About It
-
-- [Salesforce Extensions Documentation](https://developer.salesforce.com/tools/vscode/)
-- [Salesforce CLI Setup Guide](https://developer.salesforce.com/docs/atlas.en-us.sfdx_setup.meta/sfdx_setup/sfdx_setup_intro.htm)
-- [Salesforce DX Developer Guide](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_intro.htm)
-- [Salesforce CLI Command Reference](https://developer.salesforce.com/docs/atlas.en-us.sfdx_cli_reference.meta/sfdx_cli_reference/cli_reference.htm)
+I have a possible fix here: https://gitcore.soma.salesforce.com/core-2206/core-public/compare/p4/246-patch...t/cce/setup-urls

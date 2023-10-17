@@ -27,5 +27,5 @@
     <siteAdmin>test-qg50fbegjc1d@example.com</siteAdmin>
     <siteGuestRecordDefaultOwner>test-qg50fbegjc1d@example.com</siteGuestRecordDefaultOwner>
     <siteType>ChatterNetwork</siteType>
-    <urlPathPrefix>aa</urlPathPrefix>
+    <urlPathPrefix>10kconnect</urlPathPrefix>
 </CustomSite>

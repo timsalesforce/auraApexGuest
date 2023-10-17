@@ -9,7 +9,7 @@
             if (state === "SUCCESS") {
                 // Alert the user with the value returned 
                 // from the server
-                cmp.set('v.objs', response);
+                cmp.set('v.objs', response.getReturnValue());
 
                 // You would typically fire a event here to trigger 
                 // client-side notification that the server-side 
